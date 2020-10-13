@@ -2,6 +2,13 @@ from cuckoopi_py.eBirdQuery import eBirdQuery
 from cuckoopi_py.XenoCantoQuery import XenoCantoQuery
 import json
 import schedule
+import time
+import os
+
+
+## Create audio directory, if it doesn't exist
+if not os.path_is_dir("audio"):
+    os.system("mkdir audio")
 
 
 ## eBird Authentication Settings
@@ -12,23 +19,48 @@ API_KEY = key["API_KEY"]
 
 
 ## Function to download bird list, select a species, and download an audio file
-def play_a_bird():
-    opts = {"volume": 100}
-    ebird = eBirdQuery(API_KEY)
-    ebird.get_recent_nearby_observations()
-    species = ebird.choose_a_species()
-    if ebird.night:
-        opts["volume"] = 60
-    xc = XenoCantoQuery(species)
+def queue_audio():
+    global local_file
+    global night
+    records = 0
+    while not records: 
+        ebird = eBirdQuery(API_KEY)
+        ebird.get_recent_nearby_observations()
+        species = ebird.choose_a_species()
+        xc = XenoCantoQuery(species)
+        records = xc.num_records
     xc.get_audio()
-    schedule.every().minute(":00").do(xc.play_audio(**opts))
+    local_file = xc.local_audio_file
+    night = xc.night
 
 
-## Schedule task
-schedule.every().minute.at(":55").do(play_a_bird())
+# Play downloaded audio file
+def play_audio():
+    volume = 100
+    if night:
+        volume = 60
+    cmd = f"ffplay {local_file} -nodisp -autoexit -volume {volume}"
+    os.system(cmd)
 
 
-## Main program loop
-while True:
-    schedule.run.pending()
-    time.sleep(0.5)
+## Schedule tasks
+schedule.every().hour.at(":55").do(queue_audio)
+schedule.every().hour.at(":00").do(play_audio)
+
+
+try:
+
+    ## Main program loop
+    while True:
+
+        schedule.run_pending()
+        time.sleep(0.5)
+
+except KeyboardInterrupt:
+    print("CuckooPi has interrupted by a keyboard exit command.")
+
+except:
+    print("An error has occurred.")
+
+finally:
+    schedule.clear()  # Clean program exit

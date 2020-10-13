@@ -16,6 +16,7 @@ class XenoCantoQuery:
         self.search_string = f"{self.genus}+{self.species}"
         self.url = f"https://www.xeno-canto.org/api/2/recordings?query={self.search_string}+q:A+len:10-20"
         self.request()
+        self.night = 0
 
     # Make HTTP request
     def request(self):
@@ -43,12 +44,6 @@ class XenoCantoQuery:
         else:
             print("WARNING: Webpage response status code did not return 200 (STATUS: {response.status_code})")
 
-    # Play downloaded audio file
-    def play_audio(self, volume):
-        cmd = f"ffplay {self.local_audio_file} -nodisp -autoexit -volume {volume}"
-        os.system(cmd)
-        return schedule.CancelJob
-
     def get_audio(self):
 
         if self.num_records > 0:
@@ -61,14 +56,12 @@ class XenoCantoQuery:
                 os.system(f"mkdir {work_dir}; sudo chmod -R 777 {work_dir}")
             self.local_audio_file = f"{work_dir}/{file_id}.mp3"
             os.system(f"wget -O {self.local_audio_file} {self.remote_audio_file}")
-            print("File download complete.")
-            return True
+            print("File download complete.\n")
 
         else:
-            print("No records found.")
-            return False
+            print("No audio records found.\n")
+
 
 # ## Test
 # xc_client = XenoCantoQuery("Strix varia")
 # xc_client.get_audio()
-# xc_client.play_audio()

@@ -21,7 +21,7 @@ class eBirdQuery:
         if pos["elevation"][0] < 0:
             self.night = 1
         else:
-            self.night =0
+            self.night = 0
 
     def night_birds(self):
         ebird_taxonomy = pd.read_csv("eBird_Taxonomy_v2019.csv").query(
@@ -45,8 +45,11 @@ class eBirdQuery:
         url = "https://api.ebird.org/v2/data/obs/geo/recent?lat=%.2f&lng=%.2f&sort=species&dist=50" % (self.lat, self.lon)
         response = requests.request("GET", url, headers=self.headers, data={})
         self.recent_nearby_obs = pd.DataFrame(response.json())
+        # Subset based on diurnal vs nocturnal taxa
         if self.night == 1:
             self.recent_nearby_obs = self.recent_nearby_obs.query(f"speciesCode in {self.night_birds()}")
+        else:
+            self.recent_nearby_obs = self.recent_nearby_obs.query(f"speciesCode not in {self.night_birds()}")
         self.num_nearby_records = self.recent_nearby_obs.shape[0]
         print(f"{self.num_nearby_records} records returned.")
     
@@ -71,5 +74,5 @@ class eBirdQuery:
         row = self.recent_nearby_notable_obs.sample()
         common_name = row["comName"].values[0]
         sci_name = row["sciName"].values[0]
-        print(f"Species selected: {sci_name} - {common_name}")
+        print(f"Notable species selected: {sci_name} - {common_name}")
         return sci_name
