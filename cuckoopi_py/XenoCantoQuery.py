@@ -54,7 +54,8 @@ class XenoCantoQuery:
             work_dir = f"{os.getcwd()}/audio/{self.genus.capitalize()}_{self.species}"
             if not os.path.isdir(work_dir):
                 os.system(f"mkdir {work_dir}; sudo chmod -R 777 {work_dir}")
-            self.local_audio_file = f"{work_dir}/{file_id}.mp3"
+                os.system(f"mkdir {work_dir}/audio; sudo chmod -R 777 {work_dir}/audio")
+            self.local_audio_file = f"{work_dir}/audio/{file_id}.mp3"
             os.system(f"wget -O {self.local_audio_file} {self.remote_audio_file}")
             print("File download complete.\n")
 

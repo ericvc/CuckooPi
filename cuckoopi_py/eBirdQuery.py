@@ -23,6 +23,7 @@ class eBirdQuery:
         else:
             self.night = 0
 
+    ## List of nocturnal species codes
     def night_birds(self):
         ebird_taxonomy = pd.read_csv("eBird_Taxonomy_v2019.csv").query(
             "ORDER1 in 'Strigiformes' or ORDER1 in 'Caprimulgiformes'")
