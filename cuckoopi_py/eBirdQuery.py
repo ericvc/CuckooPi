@@ -8,10 +8,12 @@ from pvlib.solarposition import get_solarposition
 
 class eBirdQuery:
 
-    def __init__(self, api_key):
+    def __init__(self, api_key, latitude: float=-999., longitude: float=-999.):
+        self.lat = latitude
+        self.lon = longitude
+        self.api_key = api_key
         self.location_lookup()
         self.check_time_of_day()
-        self.api_key = api_key
 
     ## Check whether it is day or night
     def check_time_of_day(self):
@@ -34,18 +36,31 @@ class eBirdQuery:
     ## Get Location Information from IP Address
     def location_lookup(self):
 
-        try:
-            
+        if self.lon != -999 and self.lon != -999:
+            assert -180. < self.lon < 180.
+            assert -90. < self.lat < 90.
             location = json.load(urllib.request.urlopen('http://ipinfo.io/json'))
-            lat, lon = location["loc"].split(",")
-            self.lat = float(lat)
-            self.lon = float(lon)
             self.tz = location["timezone"]
-            print(f"Approximate location: Latitude: {self.lat}, Longitude: {self.lon}")
-            
-        except urllib.error.HTTPError:
-            
-            print("Error: could not determine your approximate location.")
+            print(f"Local timezone determined from IP address: {self.tz}")
+            return
+
+        else:
+
+            print("No coordinates provided. Determining approximate location from IP address.")
+
+            try:
+                
+                location = json.load(urllib.request.urlopen('http://ipinfo.io/json'))
+                lat, lon = location["loc"].split(",")
+                self.lat = float(lat)
+                self.lon = float(lon)
+                self.tz = location["timezone"]
+                self.city = location["city"]
+                print(f"Approximate location from IP address: City: {self.city} - Latitude: {self.lat}, Longitude: {self.lon}\n")
+                
+            except urllib.error.HTTPError:
+                
+                print("Error: could not determine your approximate location.")
 
     ## Get recent nearby observations of birds
     def get_recent_nearby_observations(self):
@@ -95,7 +110,7 @@ class eBirdQuery:
         common_name = row["comName"].values[0]
         sci_name = row["sciName"].values[0]
         print(f"Species selected: {sci_name} - {common_name}")
-        return sci_name
+        return sci_name, common_name
 
     ## Get recent nearby observations of birds
     def choose_a_notable_species(self):

@@ -53,7 +53,7 @@ class FlickrQuery:
         
         photos = self.response["photos"]["photo"]
         index = random.randint(0, len(photos))
-        photo_info = photos[index]
+        photo_info = photos[0]
         self.remote_photo_file = f"https://live.staticflickr.com/{photo_info['server']}/{photo_info['id']}_{photo_info['secret']}_b.jpg"
         work_dir = f"{os.getcwd()}/cache/{self.genus.capitalize()}_{self.species}"
         check_directory(work_dir)

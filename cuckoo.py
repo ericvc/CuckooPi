@@ -1,13 +1,14 @@
 from cuckoopi_py.eBirdQuery import eBirdQuery
 from cuckoopi_py.XenoCantoQuery import XenoCantoQuery
 from cuckoopi_py.FlickrQuery import FlickrQuery
+from cuckoopi_py.text_to_image import text_to_image
 import json
 import schedule
 import time
 import os
 
 
-## Create audio directory, if it doesn't exist
+## Create media file directory, if it doesn't exist
 if not os.path.isdir("cache"):
     
     os.system("mkdir cache")
@@ -27,8 +28,9 @@ def queue_audio():
     global local_audio_file
     global night
     global species
+    global common_name
 
-    ebird = eBirdQuery(EBIRD_API_KEY)
+    ebird = eBirdQuery(EBIRD_API_KEY, latitude=38.54, longitude=-121.74)
 
     species_found = False
     counter = 0
@@ -38,11 +40,11 @@ def queue_audio():
         if counter < 20:
             
             species_found = ebird.get_recent_nearby_observations()
-            time.sleep(10) # Check again in 10 seconds
+            time.sleep(5) # Check again in 5 seconds
         
         else:
 
-            print("eBird records not returned in the maximum number of attempts.")
+            print("eBird records not returned in the maximum number of attempts (20).")
             local_audio_file = "default_audio.mp3"
             night = 0
             break
@@ -53,7 +55,8 @@ def queue_audio():
     records = 0
     
     while not records: 
-        species = ebird.choose_a_species()
+
+        species, common_name = ebird.choose_a_species()
         xc = XenoCantoQuery(species)
         records = xc.num_records
     
@@ -69,6 +72,7 @@ def queue_photo():
     global local_photo_file
     flickr = FlickrQuery(species, FLICKR_API_KEY)
     local_photo_file = flickr.get_photo()
+    text_to_image(image_path=local_photo_file, text=common_name)
     return
 
 
@@ -84,11 +88,10 @@ def play_audio():
 
 
 ## Display downloaded photo as background image
-def display_image():
+def display_photo():
     
-    cmd = f"feh -F -x -Z {local_photo_file} &"
+    cmd = f"(feh -F -x -Z -Y -G {local_photo_file} &) && (sleep 3480 && pkill feh)"
     os.system(cmd)
-    print("Changing background image.\n")
     return
 
 
@@ -96,7 +99,7 @@ def display_image():
 schedule.every().hour.at(":50").do(queue_audio)
 schedule.every().hour.at(":50").do(queue_photo)
 schedule.every().hour.at(":00").do(play_audio)
-schedule.every().hour.at(":00").do(display_image)
+schedule.every().hour.at(":00").do(display_photo)
 
 
 try:
@@ -108,10 +111,13 @@ try:
         time.sleep(0.5)
 
 except KeyboardInterrupt:
+
     print("CuckooPi was interrupted by a keyboard exit command.")
 
 except:
+
     print("An error has occurred.")
 
 finally:
+
     schedule.clear()  # Clean program exit
