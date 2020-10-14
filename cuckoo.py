@@ -6,6 +6,26 @@ import json
 import schedule
 import time
 import os
+import RPi.GPIO as GPIO
+
+
+## GPIO pin settings and options
+PUSH_BUTTON = 8
+GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering scheme
+GPIO.setwarnings(False)  # Disable warnings
+GPIO.setup(PUSH_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Push-button input (initial value is on)
+
+
+# Detect when tactile button is pressed, play current audio file when it is
+def event_listener():
+
+    if os.path.isfile(local_audio_file):
+
+        GPIO.add_event_detect(PUSH_BUTTON, GPIO.FALLING, callback=lambda x: play_audio(), bouncetime=500)
+    
+    else:
+
+        print("No audio file is queued.")
 
 
 ## Create media file directory, if it doesn't exist
@@ -22,19 +42,20 @@ EBIRD_API_KEY = keys["EBIRD"]
 FLICKR_API_KEY = keys["FLICKR_KEY"]
 
 
-## Function to download bird list, select a species, and download an audio file
-def queue_audio():
-    
-    global local_audio_file
-    global night
-    global species
-    global common_name
+## Get a bird species in the local area
+def get_bird_observations():
 
+    """
+    The function queries eBird to find bird species spotted in the local area within the last two weeks.
+    """
+
+    # eBird REST client
+    global ebird
     ebird = eBirdQuery(EBIRD_API_KEY, latitude=38.54, longitude=-121.74)
 
+    # Search for recent bird observations
     species_found = False
     counter = 0
-    
     while not species_found:
 
         if counter < 20:
@@ -44,25 +65,44 @@ def queue_audio():
         
         else:
 
-            print("eBird records not returned in the maximum number of attempts (20).")
-            local_audio_file = "default_audio.mp3"
-            night = 0
-            break
+            # If no records are found, return default values:
+            raise ValueError("eBird records not returned in the maximum number of attempts (20).")
 
         counter += 1
-    
-                
-    records = 0
-    
-    while not records: 
 
-        species, common_name = ebird.choose_a_species()
-        xc = XenoCantoQuery(species)
-        records = xc.num_records
+    return
+
+
+def queue_audio():
     
+    global local_audio_file 
+    global species
+    global common_name
+    
+    # Check xeno-canto for audio records of the selected bird species
+    records = 0
+    counter = 0
+    while not records:
+
+        if counter < 10:
+
+            species, common_name = ebird.choose_a_species()
+            xc = XenoCantoQuery(species)
+            records = xc.num_records
+
+        else:
+
+            print("No xeno-canto records found in 10 attempts. Selecting default values.")
+            local_audio_file = "config/default_audio.mp3" #  Default audio file
+            species = "Strix varia"  #  Default species
+            common_name = "Barred Owl"
+            return
+        
+        counter += 1
+    
+    # When found, download the file
     xc.get_audio()
     local_audio_file = xc.local_audio_file
-    night = xc.night
     return
 
 
@@ -72,22 +112,23 @@ def queue_photo():
     global local_photo_file
     flickr = FlickrQuery(species, FLICKR_API_KEY)
     local_photo_file = flickr.get_photo()
-    text_to_image(image_path=local_photo_file, text=common_name)
+    text_to_image(local_photo_file, common_name, species)
     return
 
 
 ## Play downloaded audio file
 def play_audio():
 
+    # Adjust volume depending on the time of day
     volume = 100
-    if night:
-        volume = 60
+    if ebird.night:
+        volume = 65
     cmd = f"ffplay {local_audio_file} -nodisp -autoexit -volume {volume} &"
     os.system(cmd)
     return
 
 
-## Display downloaded photo as background image
+## Display downloaded photo as fullscreen image
 def display_photo():
     
     cmd = f"(feh -F -x -Z -Y -G {local_photo_file} &) && (sleep 3480 && pkill feh)"
@@ -95,16 +136,26 @@ def display_photo():
     return
 
 
-## Schedule tasks
+## Schedule tasks to run on time
+schedule.every().hour.at(":50").do(get_bird_observations)
 schedule.every().hour.at(":50").do(queue_audio)
 schedule.every().hour.at(":50").do(queue_photo)
 schedule.every().hour.at(":00").do(play_audio)
 schedule.every().hour.at(":00").do(display_photo)
 
 
+# ## Testing - uncomment lines to run functions back-to-back
+# get_bird_observations()
+# queue_audio()
+# queue_photo()
+# play_audio()
+# display_photo()
+
+
 try:
 
     ## Main program loop
+    event_listener()
     while True:
 
         schedule.run_pending()
@@ -120,4 +171,6 @@ except:
 
 finally:
 
-    schedule.clear()  # Clean program exit
+    # Clean program exit
+    GPIO.cleanup()  
+    schedule.clear()

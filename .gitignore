@@ -1,7 +1,12 @@
-.idea*
+.idea/
 ebird_api_key.json
-audio
+audio/
 cuckoopi_py/__pycache__/
 __pycache__/
 api_keys.json
 .Rhistory
+cache/
+
+feh_003430_000001_filelist
+
+.~lock.eBird_Taxonomy_v2019.csv#

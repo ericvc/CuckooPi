@@ -30,6 +30,7 @@ HOMEDIR="/home/pi/" #  Home Directory
 #################################################################################
 # Install system updates if available
 #################################################################################
+
 sudo apt-get update
 sudo apt-get upgrade
 
@@ -39,10 +40,10 @@ sudo apt-get upgrade
 #################################################################################
 
 # Main directory
-mkdir "${PROJDIR}/${PROJNAME}"
+mkdir "${HOMEDIR}/${PROJDIR}/${PROJNAME}"
 
 # Temporary storage directory
-mkdir "${PROJDIR}/${PROJNAME}/cache"
+mkdir "${HOMEDIR}/${PROJDIR}/${PROJNAME}/cache"
 
 
 #################################################################################
@@ -61,11 +62,11 @@ git config --list
 
 
 #################################################################################
-# Install Python Libraries
+# Install Required Python Libraries
 #################################################################################
 
 # Install all over libraries with pip
-pip3 install -r "${PROJDIR}/${PROJNAME}/requirements.txt"
+pip3 install -r "${HOMEDIR}/${PROJDIR}/${PROJNAME}/requirements.txt"
 
 
 #################################################################################
@@ -80,7 +81,7 @@ sudo apt-get install -y lame
 sudo apt-get install -y sox
 
 # FFmpeg (may take some time to download and compile)
-sudo bash "${PROJDIR}/${PROJNAME}/config/ffmpeg_install.sh"
+sudo bash "${HOMEDIR}/${PROJDIR}/${PROJNAME}/config/ffmpeg_install.sh"
 
 # Feh
 sudo apt-get install -y feh
@@ -91,7 +92,7 @@ sudo apt-get install -y feh
 #################################################################################
 
 # Clone project repository to local storage
-git clone https://github.com/ericvc/CuckooPi "${PROJDIR}/${PROJNAME}"
+git clone https://github.com/ericvc/CuckooPi "${HOMEDIR}/${PROJDIR}/${PROJNAME}"
 
 
 #################################################################################

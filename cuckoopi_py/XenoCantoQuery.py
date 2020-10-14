@@ -15,9 +15,8 @@ class XenoCantoQuery:
         self.genus = Genus_species.split(" ")[0].lower()
         self.species = Genus_species.split(" ")[1]
         self.search_string = f"{self.genus}+{self.species}"
-        self.url = f"https://www.xeno-canto.org/api/2/recordings?query={self.search_string}+q:A+len:8-20"
+        self.url = f"https://www.xeno-canto.org/api/2/recordings?query={self.search_string}+q:A+len:12-30"
         self.request()
-        self.night = 0
 
     # Make HTTP request
     def request(self):
@@ -39,7 +38,7 @@ class XenoCantoQuery:
 
         else:
 
-            print(f"WARNING: Webpage response status code did not return 200 (STATUS: {response.status_code})")
+            print(f"Xeno-canto response status code did not return 200 (STATUS: {response.status_code})")
 
     def get_audio(self):
 

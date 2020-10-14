@@ -17,6 +17,7 @@ class FlickrQuery:
                    f"format=json&text={self.search_string}&privacy_filter=1&content_type=1"
         self.request()
 
+    # Function needed to format the returned JSON object
     def format_json(self, x: str):
         
         x = re.compile("jsonFlickrApi\\(").sub("", x)
@@ -28,7 +29,8 @@ class FlickrQuery:
         
         # Define headers
         USER_AGENT_HEADERS = {
-            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0"}
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0"
+        }
 
         # GET HTTP response
         response = requests.get(self.url, headers=USER_AGENT_HEADERS)
@@ -42,18 +44,17 @@ class FlickrQuery:
 
             except:
                 
-                self.num_records = 0
-                print("Something went wrong. No records received.")
+                print("Something went wrong. No photos found.")
 
         else:
             
-            print(f"WARNING: Webpage response status code did not return 200 (STATUS: {response.status_code})")
+            print(f"Flickr API response did not return status code 200 (STATUS: {response.status_code})")
 
     def get_photo(self):
         
         photos = self.response["photos"]["photo"]
-        index = random.randint(0, len(photos))
-        photo_info = photos[0]
+        index = random.randint(0, len(photos)-1)
+        photo_info = photos[index]
         self.remote_photo_file = f"https://live.staticflickr.com/{photo_info['server']}/{photo_info['id']}_{photo_info['secret']}_b.jpg"
         work_dir = f"{os.getcwd()}/cache/{self.genus.capitalize()}_{self.species}"
         check_directory(work_dir)

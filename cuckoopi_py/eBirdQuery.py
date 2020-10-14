@@ -9,6 +9,7 @@ from pvlib.solarposition import get_solarposition
 class eBirdQuery:
 
     def __init__(self, api_key, latitude: float=-999., longitude: float=-999.):
+
         self.lat = latitude
         self.lon = longitude
         self.api_key = api_key
@@ -18,19 +19,29 @@ class eBirdQuery:
     ## Check whether it is day or night
     def check_time_of_day(self):
 
-        current_time = "{:%Y-%m-%d %H:%M:%S}".format(datetime.now())
-        time = pd.DatetimeIndex([current_time], tz=self.tz)
+        current_time = "{:%Y-%m-%d %H:%M:%S}".format(datetime.utcnow())
+        time = pd.DatetimeIndex([current_time], tz='utc')
         pos = get_solarposition(time, self.lat, self.lon)
         if pos["elevation"][0] < 0:
+
             self.night = 1
+            print("Auto-detect thinks it is night time.")
+            
         else:
+
+            print("Auto-detect thinks it is day time.")
             self.night = 0
 
-    ## List of nocturnal species codes
     def night_birds(self):
         
-        ebird_taxonomy = pd.read_csv("eBird_Taxonomy_v2019.csv").query(
-            "ORDER1 in 'Strigiformes' or ORDER1 in 'Caprimulgiformes'")
+        nocturnal_taxa = [
+            "ORDER1 in 'Strigiformes'",
+            "or FAMILY in 'Caprimulgidae (Nightjars and Allies)'",
+            "or FAMILY in 'Aegothelidae (Owlet-nightjars)'",
+            "or FAMILY in 'Podargidae (Frogmouths)'",
+            "or FAMILY in 'Nyctibiidae (Potoos)'"
+            ]
+        ebird_taxonomy = pd.read_csv("eBird_Taxonomy_v2019.csv").query(" ".join(nocturnal_taxa))
         return list(ebird_taxonomy["SPECIES_CODE"])
 
     ## Get Location Information from IP Address
@@ -74,6 +85,18 @@ class eBirdQuery:
 
             self.recent_nearby_obs = pd.DataFrame(response.json())
             print(f"eBird observation records found.")
+
+            # Subset based on diurnal vs nocturnal taxa
+            if self.night:
+
+                self.recent_nearby_obs = self.recent_nearby_obs.query(f"speciesCode in {self.night_birds()}")
+            
+            else:
+                
+                self.recent_nearby_obs = self.recent_nearby_obs.query(f"speciesCode not in {self.night_birds()}")
+                
+            self.num_nearby_records = self.recent_nearby_obs.shape[0]
+            print(f"{self.num_nearby_records} records returned.")
             return True
 
         else:
@@ -81,27 +104,35 @@ class eBirdQuery:
             print("Something went wrong. No eBird records received. Trying again...")
             return False
 
-        
-        # Subset based on diurnal vs nocturnal taxa
-        if self.night == 1:
-
-            self.recent_nearby_obs = self.recent_nearby_obs.query(f"speciesCode in {self.night_birds()}")
-        
-        else:
-            
-            self.recent_nearby_obs = self.recent_nearby_obs.query(f"speciesCode not in {self.night_birds()}")
-            
-        self.num_nearby_records = self.recent_nearby_obs.shape[0]
-        print(f"{self.num_nearby_records} records returned.")
-    
     ## Get notable nearby observations of birds
     def get_recent_notable_nearby_observations(self):
         
         url = "https://api.ebird.org/v2/data/obs/geo/recent/notable?lat=%.2f&lng=%.2f&sort=species&dist=50" % (self.lat, self.lon)
         response = requests.request("GET", url, headers=self.headers, data={})
-        self.recent_nearby_notable_obs = pd.DataFrame(response.json())
-        self.num_nearby_notable_records = self.recent_nearby_obs.shape[0]
-        print(f"{self.num_nearby_notable_records} notable records returned.")
+        
+        # if response status code is 200
+        if response:
+
+            self.recent_notable_nearby_obs = pd.DataFrame(response.json())
+            print(f"eBird observation records found.")
+            
+            # Subset based on diurnal vs nocturnal taxa
+            if self.night:
+
+                self.recent_notable_nearby_obs = self.recent_notable_nearby_obs.query(f"speciesCode in {self.night_birds()}")
+            
+            else:
+                
+                self.recent_notable_nearby_obs = self.recent_notable_nearby_obs.query(f"speciesCode not in {self.night_birds()}")
+                
+            self.num_notable_nearby_records = self.recent_notable_nearby_obs.shape[0]
+            print(f"{self.num_notable_nearby_records} notable records returned.")
+            return True
+
+        else:
+
+            print(f"Something went wrong. No notable eBird records received (status: {response.status_code}). Trying again...")
+            return False
 
     ## Get recent nearby observations of birds
     def choose_a_species(self):
@@ -119,4 +150,4 @@ class eBirdQuery:
         common_name = row["comName"].values[0]
         sci_name = row["sciName"].values[0]
         print(f"Notable species selected: {sci_name} - {common_name}")
-        return sci_name
+        return sci_name, common_name
