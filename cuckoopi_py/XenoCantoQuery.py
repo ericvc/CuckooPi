@@ -23,7 +23,9 @@ class XenoCantoQuery:
     def request(self):
 
         # Define headers
-        USER_AGENT_HEADERS = {"user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0"}
+        USER_AGENT_HEADERS = {
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0"
+	    }
 
         # GET HTTP response
         response = requests.get(self.url, headers=USER_AGENT_HEADERS)
@@ -31,18 +33,9 @@ class XenoCantoQuery:
         # if response status code is 200
         if response:
             
-            if response.status_code == 400:
-
-                try:
-
-                    self.response_json = response.json()
-                    self.num_records = int(self.response_json["numRecordings"])
-                    print(f"{self.num_records} recordings found for {self.genus.capitalize()} {self.species}")
-
-                except AttributeError:
-                    
-                    self.num_records = 0
-                    print("Something went wrong. No records received.")
+            self.response_json = response.json()
+            self.num_records = int(self.response_json["numRecordings"])
+            print(f"{self.num_records} recordings found for {self.genus.capitalize()} {self.species}")
 
         else:
 
@@ -62,7 +55,7 @@ class XenoCantoQuery:
             print("File download complete.\n")
 
         else:
-            
+
             print("No audio records found.\n")
 
 

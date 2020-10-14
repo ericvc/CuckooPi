@@ -11,7 +11,7 @@ class eBirdQuery:
     def __init__(self, api_key):
         self.location_lookup()
         self.check_time_of_day()
-        self.headers = {'X-eBirdApiToken': api_key}
+        self.api_key = api_key
 
     ## Check whether it is day or night
     def check_time_of_day(self):
@@ -52,26 +52,20 @@ class eBirdQuery:
         
         url = "https://api.ebird.org/v2/data/obs/geo/recent?lat=%.2f&lng=%.2f&sort=species&dist=50" % (self.lat, self.lon)
         print(url)
-        response = requests.request("GET", url, headers=self.headers, data={})
+        response = requests.request("GET", url, headers={'X-eBirdApiToken': self.api_key}, data={})
         
         # if response status code is 200
         if response:
 
-            try:
-
-                self.recent_nearby_obs = pd.DataFrame(response.json())
-                print(f"eBird observation records found for {self.genus.capitalize()} {self.species}")
-                return True
-
-            except:
-
-                print("Something went wrong. No eBird records received. Trying again...")
-                return False
+            self.recent_nearby_obs = pd.DataFrame(response.json())
+            print(f"eBird observation records found.")
+            return True
 
         else:
 
-            print(f"WARNING: eBird API response status code did not return 200 (STATUS: {response.status_code})")
+            print("Something went wrong. No eBird records received. Trying again...")
             return False
+
         
         # Subset based on diurnal vs nocturnal taxa
         if self.night == 1:

@@ -86,7 +86,7 @@ def play_audio():
 ## Display downloaded photo as background image
 def display_image():
     
-    cmd = f"feh --bg-scale {local_photo_file} &"
+    cmd = f"feh -F -x -Z {local_photo_file} &"
     os.system(cmd)
     print("Changing background image.\n")
     return

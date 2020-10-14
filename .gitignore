@@ -4,3 +4,4 @@ audio
 cuckoopi_py/__pycache__/
 __pycache__/
 api_keys.json
+.Rhistory
