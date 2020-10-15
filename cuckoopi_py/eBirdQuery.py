@@ -108,7 +108,7 @@ class eBirdQuery:
     def get_recent_notable_nearby_observations(self):
         
         url = "https://api.ebird.org/v2/data/obs/geo/recent/notable?lat=%.2f&lng=%.2f&sort=species&dist=50" % (self.lat, self.lon)
-        response = requests.request("GET", url, headers=self.headers, data={})
+        response = requests.request("GET", url, headers={'X-eBirdApiToken': self.api_key}, data={})
         
         # if response status code is 200
         if response:

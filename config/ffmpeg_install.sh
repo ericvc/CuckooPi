@@ -67,6 +67,10 @@ git clone https://github.com/sekrit-twc/zimg.git ~/ffmpeg-libraries/zimg \
   && sudo make install
 
 
+## Normalize
+pip3 install ffmpeg-normalize
+
+
 sudo ldconfig
 
 

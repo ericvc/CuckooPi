@@ -79,6 +79,7 @@ sudo apt-get install -y lame
 
 # sox
 sudo apt-get install -y sox
+sudo apt-get install libsox-fmt-mp3
 
 # FFmpeg (may take some time to download and compile)
 sudo bash "${HOMEDIR}/${PROJDIR}/${PROJNAME}/config/ffmpeg_install.sh"

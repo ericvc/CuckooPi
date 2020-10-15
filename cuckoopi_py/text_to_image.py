@@ -1,5 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont, ImageColor
 import os
+import time
 
 
 # Calculate the luminance of a color
@@ -13,6 +14,23 @@ def __luminance(c):
 def __are_compatible(c1, c2):
 
     return abs(__luminance(c1) - __luminance(c2)) >= 128.0
+
+
+def draw_time(image_path, text_color):
+
+    # Draw current time
+    image = Image.open(image_path)
+    w, h = image.size
+    font_file = "config/fonts/LiberationSans-Bold.ttf"
+    font = ImageFont.truetype(font_file, size=150, encoding="unic")
+    hour, minute = map(int, time.strftime("%H %M").split())
+    time_text = f"{hour}:{minute}"
+    draw = ImageDraw.Draw(image)
+    draw.text((0.35*w, 0.5*h), time_text, fill=text_color, font=font)
+    # Save image
+    output_path = image_path.split(".")[0] + "_time.jpg"
+    image.save(output_path)
+    return output_path
 
 
 # Write text to an image file
@@ -56,17 +74,17 @@ def text_to_image(image_path: str, common_name: str, binomial: str, font_size_ma
     bottom = h * 0.25
   
     # Cropped image of above dimension 
-    im = image.crop((left, top, right, bottom))
+    im_crop = image.crop((left, top, right, bottom))
 
-    # Determine best text color from cropped region (text is black by default)
-    num_pixels = im.size[0] * im.size[1]
-    colors = sorted(im.getcolors(num_pixels), reverse=True)
+    # Determine best text color from cropped region (white is default)
+    num_pixels = im_crop.size[0] * im_crop.size[1]
+    colors = sorted(im_crop.getcolors(num_pixels), reverse=True)
     main_color = '#%02x%02x%02x' % colors[0][1]
-    text_color = "#%02x%02x%02x" % (255, 255, 255)  # assumes bright colors - black font used
+    text_color = "#%02x%02x%02x" % (0, 0, 0)  # assumes dark colors - white font used
 
     if not __are_compatible(text_color, main_color):
     
-        text_color = "#%02x%02x%02x" % (0, 0, 0)  # dark colors - white font instead
+        text_color = "#%02x%02x%02x" % (255, 255, 255)  # bright colors - black font instead
   
     # Position text (top left corner)
     (x, y) = (0.035*w, 0.035*h)  # 3.5% of the width (from left), 3.5% of the height (from top)

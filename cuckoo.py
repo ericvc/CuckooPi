@@ -9,25 +9,6 @@ import os
 import RPi.GPIO as GPIO
 
 
-## GPIO pin settings and options
-PUSH_BUTTON = 8
-GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering scheme
-GPIO.setwarnings(False)  # Disable warnings
-GPIO.setup(PUSH_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Push-button input (initial value is on)
-
-
-# Detect when tactile button is pressed, play current audio file when it is
-def event_listener():
-
-    if os.path.isfile(local_audio_file):
-
-        GPIO.add_event_detect(PUSH_BUTTON, GPIO.FALLING, callback=lambda x: play_audio(), bouncetime=500)
-    
-    else:
-
-        print("No audio file is queued.")
-
-
 ## Create media file directory, if it doesn't exist
 if not os.path.isdir("cache"):
     
@@ -40,6 +21,32 @@ with open("api_keys.json") as f:
 
 EBIRD_API_KEY = keys["EBIRD"]
 FLICKR_API_KEY = keys["FLICKR_KEY"]
+
+
+## Global variables (set defaults)
+local_audio_file = "config/default_audio.mp3"
+local_photo_file = "config/default_photo.jpg"
+species = "Strix varia"
+common_name = "Barred Owl"
+
+
+## GPIO pin settings and options
+PUSH_BUTTON = 8
+GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering scheme
+GPIO.setwarnings(False)  # Disable warnings
+GPIO.setup(PUSH_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Push-button input (initial value is on)
+
+
+## Detect when tactile button is pressed, play current audio file when it is
+def event_listener():
+
+    if os.path.isfile(local_audio_file):
+
+        GPIO.add_event_detect(PUSH_BUTTON, GPIO.FALLING, callback=lambda x: play_audio(), bouncetime=500)
+    
+    else:
+
+        print("No audio file is queued.")
 
 
 ## Get a bird species in the local area
@@ -75,13 +82,10 @@ def get_bird_observations():
 
 def queue_audio():
     
-    global local_audio_file 
-    global species
-    global common_name
-    
-    # Check xeno-canto for audio records of the selected bird species
+    # Check xeno-canto for audio records of the selected bird    
     records = 0
     counter = 0
+    global common_name, species, local_audio_file
     while not records:
 
         if counter < 10:
@@ -93,16 +97,24 @@ def queue_audio():
         else:
 
             print("No xeno-canto records found in 10 attempts. Selecting default values.")
-            local_audio_file = "config/default_audio.mp3" #  Default audio file
-            species = "Strix varia"  #  Default species
+            local_audio_file = "config/default_audio.mp3"  # Default audio file
+            local_photo_file = "config/default_photo.jpg"  # Default photo file
+            species = "Strix varia"  # Default species
             common_name = "Barred Owl"
+            
             return
         
         counter += 1
     
-    # When found, download the file
+    # When found, download the file, normalize the levels, and add fade effects
     xc.get_audio()
     local_audio_file = xc.local_audio_file
+    path = local_audio_file.split(".")[0] + "_temp.mp3"
+    cmd = f"ffmpeg-normalize {local_audio_file} -c:a libmp3lame -b:a 192k -f -o {path}" \
+          f"&& sox {path} {local_audio_file} fade h 0:1 0 0:3" \
+          f"&& rm {path}"
+    os.system(cmd)
+    
     return
 
 
@@ -113,18 +125,31 @@ def queue_photo():
     flickr = FlickrQuery(species, FLICKR_API_KEY)
     local_photo_file = flickr.get_photo()
     text_to_image(local_photo_file, common_name, species)
+    
     return
 
 
 ## Play downloaded audio file
 def play_audio():
 
+    if "ebird" in globals():
+
+        night = ebird.night
+
+    else:
+
+        night = 0
+
     # Adjust volume depending on the time of day
     volume = 100
-    if ebird.night:
+
+    if night:
+
         volume = 65
+    
     cmd = f"ffplay {local_audio_file} -nodisp -autoexit -volume {volume} &"
     os.system(cmd)
+    
     return
 
 
@@ -133,6 +158,7 @@ def display_photo():
     
     cmd = f"(feh -F -x -Z -Y -G {local_photo_file} &) && (sleep 3480 && pkill feh)"
     os.system(cmd)
+    
     return
 
 
@@ -152,10 +178,13 @@ schedule.every().hour.at(":00").do(display_photo)
 # display_photo()
 
 
+# Initialize push button listener
+event_listener()
+
+
 try:
 
     ## Main program loop
-    event_listener()
     while True:
 
         schedule.run_pending()
