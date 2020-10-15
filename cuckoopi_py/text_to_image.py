@@ -16,29 +16,12 @@ def __are_compatible(c1, c2):
     return abs(__luminance(c1) - __luminance(c2)) >= 128.0
 
 
-def draw_time(image_path, text_color):
-
-    # Draw current time
-    image = Image.open(image_path)
-    w, h = image.size
-    font_file = "config/fonts/LiberationSans-Bold.ttf"
-    font = ImageFont.truetype(font_file, size=150, encoding="unic")
-    hour, minute = map(int, time.strftime("%H %M").split())
-    time_text = f"{hour}:{minute}"
-    draw = ImageDraw.Draw(image)
-    draw.text((0.35*w, 0.5*h), time_text, fill=text_color, font=font)
-    # Save image
-    output_path = image_path.split(".")[0] + "_time.jpg"
-    image.save(output_path)
-    return output_path
-
-
 # Write text to an image file
-def text_to_image(image_path: str, common_name: str, binomial: str, font_size_main: int=45, font_size_sub: int=30):
+def text_to_image(input_path: str, common_name: str, binomial: str, font_size_main: int=50, font_size_sub: int=35):
 
-    if not os.path.isfile(image_path):
+    if not os.path.isfile(input_path):
 
-        raise FileNotFoundError(f"No image file was found at {image_path}.")
+        raise FileNotFoundError(f"No image file was found at {input_path}.")
     
     # Get font from file
     font_found = False
@@ -58,13 +41,13 @@ def text_to_image(image_path: str, common_name: str, binomial: str, font_size_ma
             font_main = ImageFont.load_default()
             font_sub = ImageFont.load_default()
             font_found = True
-        
-        except:
 
-            raise ValueError("There was an error loading fonts for the photo caption.")
+        except:
+            
+            raise EnvironmentError("There was an error loading fonts for caption text.")
 
     # Load image
-    image = Image.open(image_path)
+    image = Image.open(input_path)
 
     # Determine background color from region of the image
     w, h = image.size
@@ -94,5 +77,12 @@ def text_to_image(image_path: str, common_name: str, binomial: str, font_size_ma
     draw.text((x, y), common_name, fill=text_color, font=font_main)
     draw.text((x, y+48), f"{binomial}", fill=text_color, font=font_sub)
 
+    # # Draw current time
+    # hour, minute = map(int, time.strftime("%H %M").split())
+    # minute += 1
+    
+    # time_text = f"{hour}:{minute}"
+    # draw.text((0.35*w, 0.4*h), time_text, fill=text_color, font=font_time)
+
     # Save image
-    image.save(image_path)
+    image.save(input_path)

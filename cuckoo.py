@@ -24,10 +24,15 @@ FLICKR_API_KEY = keys["FLICKR_KEY"]
 
 
 ## Global variables (set defaults)
-local_audio_file = "config/default_audio.mp3"
-local_photo_file = "config/default_photo.jpg"
-species = "Strix varia"
-common_name = "Barred Owl"
+def default_vars():
+
+    global local_audio_file, local_photo_file, species, common_name
+    local_audio_file = "config/default_audio.mp3"
+    local_photo_file = "config/default_photo.jpg"
+    species = "Strix varia"
+    common_name = "Barred Owl"
+
+default_vars()  # Set initial globals
 
 
 ## GPIO pin settings and options
@@ -42,7 +47,7 @@ def event_listener():
 
     if os.path.isfile(local_audio_file):
 
-        GPIO.add_event_detect(PUSH_BUTTON, GPIO.FALLING, callback=lambda x: play_audio(), bouncetime=500)
+        GPIO.add_event_detect(PUSH_BUTTON, GPIO.FALLING, callback=lambda: play_audio(repeat=True), bouncetime=500)
     
     else:
 
@@ -85,7 +90,7 @@ def queue_audio():
     # Check xeno-canto for audio records of the selected bird    
     records = 0
     counter = 0
-    global common_name, species, local_audio_file
+    global common_name, species, queued_audio_file
     while not records:
 
         if counter < 10:
@@ -97,10 +102,7 @@ def queue_audio():
         else:
 
             print("No xeno-canto records found in 10 attempts. Selecting default values.")
-            local_audio_file = "config/default_audio.mp3"  # Default audio file
-            local_photo_file = "config/default_photo.jpg"  # Default photo file
-            species = "Strix varia"  # Default species
-            common_name = "Barred Owl"
+            default_vars()
             
             return
         
@@ -108,10 +110,10 @@ def queue_audio():
     
     # When found, download the file, normalize the levels, and add fade effects
     xc.get_audio()
-    local_audio_file = xc.local_audio_file
-    path = local_audio_file.split(".")[0] + "_temp.mp3"
-    cmd = f"ffmpeg-normalize {local_audio_file} -c:a libmp3lame -b:a 192k -f -o {path}" \
-          f"&& sox {path} {local_audio_file} fade h 0:1 0 0:3" \
+    queued_audio_file = xc.local_audio_file
+    path = queued_audio_file.split(".")[0] + "_temp.mp3"
+    cmd = f"ffmpeg-normalize {queued_audio_file} -c:a libmp3lame -b:a 192k -f -o {path}" \
+          f"&& sox {path} {queued_audio_file} fade h 0:1 0 0:3" \
           f"&& rm {path}"
     os.system(cmd)
     
@@ -124,13 +126,12 @@ def queue_photo():
     global local_photo_file
     flickr = FlickrQuery(species, FLICKR_API_KEY)
     local_photo_file = flickr.get_photo()
-    text_to_image(local_photo_file, common_name, species)
     
     return
 
 
 ## Play downloaded audio file
-def play_audio():
+def play_audio(repeat: bool):
 
     if "ebird" in globals():
 
@@ -147,6 +148,11 @@ def play_audio():
 
         volume = 65
     
+    if not repeat:
+
+        global local_audio_file
+        local_audio_file = queued_audio_file
+
     cmd = f"ffplay {local_audio_file} -nodisp -autoexit -volume {volume} &"
     os.system(cmd)
     
@@ -155,30 +161,34 @@ def play_audio():
 
 ## Display downloaded photo as fullscreen image
 def display_photo():
-    
-    cmd = f"(feh -F -x -Z -Y -G {local_photo_file} &) && (sleep 3480 && pkill feh)"
-    os.system(cmd)
-    
+
+    #temp_photo_file = local_photo_file.split(".")[0] + "_temp.jpg"
+    text_to_image(local_photo_file, common_name, species)
+    # Close previous image, if displayed
+    os.system("pkill feh")
+    # Use 'feh' to diplay queued photo file
+    os.system(f"(feh -F -x -Z -Y -G {local_photo_file} &)")
+
     return
 
 
-## Schedule tasks to run on time
+# Schedule tasks to run on time
 schedule.every().hour.at(":50").do(get_bird_observations)
 schedule.every().hour.at(":50").do(queue_audio)
 schedule.every().hour.at(":50").do(queue_photo)
-schedule.every().hour.at(":00").do(play_audio)
+schedule.every().hour.at(":00").do(play_audio, False)
 schedule.every().hour.at(":00").do(display_photo)
 
 
 # ## Testing - uncomment lines to run functions back-to-back
-# get_bird_observations()
-# queue_audio()
-# queue_photo()
-# play_audio()
-# display_photo()
+# schedule.every(1).minutes.do(get_bird_observations)
+# schedule.every(1).minutes.do(queue_audio)
+# schedule.every(1).minutes.do(queue_photo)
+# schedule.every(1).minutes.do(play_audio, False)
+# schedule.every(1).minutes.do(display_photo)
 
 
-# Initialize push button listener
+## Initialize push button listener
 event_listener()
 
 

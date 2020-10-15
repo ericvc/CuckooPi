@@ -22,7 +22,7 @@
 # Script Variables (edit for custom configuration)
 #################################################################################
 
-PROJDIR="/home/pi/Projects"  # Projects Directory
+PROJDIR="Projects"  # Projects Directory
 PROJNAME="CuckooPi" #  Project Name
 HOMEDIR="/home/pi/" #  Home Directory
 
@@ -42,7 +42,7 @@ sudo apt-get upgrade
 # Main directory
 mkdir "${HOMEDIR}/${PROJDIR}/${PROJNAME}"
 
-# Temporary storage directory
+# Media file storage directory
 mkdir "${HOMEDIR}/${PROJDIR}/${PROJNAME}/cache"
 
 
@@ -79,7 +79,7 @@ sudo apt-get install -y lame
 
 # sox
 sudo apt-get install -y sox
-sudo apt-get install libsox-fmt-mp3
+sudo apt-get install -y libsox-fmt-mp3
 
 # FFmpeg (may take some time to download and compile)
 sudo bash "${HOMEDIR}/${PROJDIR}/${PROJNAME}/config/ffmpeg_install.sh"

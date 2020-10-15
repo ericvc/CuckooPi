@@ -8,13 +8,14 @@ from pvlib.solarposition import get_solarposition
 
 class eBirdQuery:
 
-    def __init__(self, api_key, latitude: float=-999., longitude: float=-999.):
+    def __init__(self, api_key, latitude: float=-999., longitude: float=-999., search_radius: int=20):
 
         self.lat = latitude
         self.lon = longitude
         self.api_key = api_key
         self.location_lookup()
         self.check_time_of_day()
+        self.search_radius = search_radius
 
     ## Check whether it is day or night
     def check_time_of_day(self):
@@ -48,11 +49,14 @@ class eBirdQuery:
     def location_lookup(self):
 
         if self.lon != -999 and self.lon != -999:
+
             assert -180. < self.lon < 180.
             assert -90. < self.lat < 90.
             location = json.load(urllib.request.urlopen('http://ipinfo.io/json'))
             self.tz = location["timezone"]
             print(f"Local timezone determined from IP address: {self.tz}")
+            self.search_radius = 50  # If approximate location, use widest search radius
+
             return
 
         else:
@@ -76,7 +80,7 @@ class eBirdQuery:
     ## Get recent nearby observations of birds
     def get_recent_nearby_observations(self):
         
-        url = "https://api.ebird.org/v2/data/obs/geo/recent?lat=%.2f&lng=%.2f&sort=species&dist=50" % (self.lat, self.lon)
+        url = "https://api.ebird.org/v2/data/obs/geo/recent?lat=%.2f&lng=%.2f&sort=species&dist=%s" % (self.lat, self.lon, self.search_radius)
         print(url)
         response = requests.request("GET", url, headers={'X-eBirdApiToken': self.api_key}, data={})
         
@@ -146,7 +150,7 @@ class eBirdQuery:
     ## Get recent nearby observations of birds
     def choose_a_notable_species(self):
 
-        row = self.recent_nearby_notable_obs.sample()
+        row = self.recent_notable_nearby_obs.sample()
         common_name = row["comName"].values[0]
         sci_name = row["sciName"].values[0]
         print(f"Notable species selected: {sci_name} - {common_name}")
