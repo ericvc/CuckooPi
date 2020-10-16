@@ -45,7 +45,7 @@ def event_listener():
 
     if os.path.isfile(local_audio_file):
 
-        GPIO.add_event_detect(PUSH_BUTTON, GPIO.FALLING, callback=lambda: playback(), bouncetime=500)  
+        GPIO.add_event_detect(PUSH_BUTTON, GPIO.FALLING, callback=lambda x: playback(True), bouncetime=500)  
 
     else:
 
@@ -181,10 +181,19 @@ def display_photo(repeat: bool):
 
 
 ## Playback most recent audio and photo file
-def playback():
+def playback(repeat: bool):
 
-    play_audio(True)
-    display_photo(True)
+    if repeat:
+        
+        GPIO.remove_event_detect(PUSH_BUTTON)
+
+    play_audio(repeat)
+    display_photo(repeat)
+
+    if repeat:
+
+        event_listener()
+    
 
 
 ## Display default photo file
@@ -201,16 +210,21 @@ default_vars()
 event_listener()
 
 
-## Start program with blank screen - will begin in the next hour
-blank_screen() 
+## Queue file function
+def queue_files():
+    get_bird_observations()
+    queue_audio()
+    queue_photo()
+
+
+## Start up
+queue_files()
+playback(False)
 
 
 ## Schedule tasks to run on time
-schedule.every().hour.at(":50").do(get_bird_observations)
-schedule.every().hour.at(":50").do(queue_audio)
-schedule.every().hour.at(":50").do(queue_photo)
-schedule.every().hour.at(":00").do(play_audio, False)
-schedule.every().hour.at(":00").do(display_photo, False)
+schedule.every().hour.at(":50").do(queue_files)
+schedule.every().hour.at(":00").do(playback, False)
 
 
 # ## Testing - uncomment lines to run functions back-to-back
