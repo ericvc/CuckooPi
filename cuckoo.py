@@ -32,8 +32,6 @@ def default_vars():
     species = "Strix varia"
     common_name = "Barred Owl"
 
-default_vars()  # Set initial globals
-
 
 ## GPIO pin settings and options
 PUSH_BUTTON = 8
@@ -47,11 +45,11 @@ def event_listener():
 
     if os.path.isfile(local_audio_file):
 
-        GPIO.add_event_detect(PUSH_BUTTON, GPIO.FALLING, callback=lambda: play_audio(repeat=True), bouncetime=500)
-    
+        GPIO.add_event_detect(PUSH_BUTTON, GPIO.FALLING, callback=lambda: playback(), bouncetime=500)  
+
     else:
 
-        print("No audio file is queued.")
+        print("No file is queued.")
 
 
 ## Get a bird species in the local area
@@ -123,9 +121,9 @@ def queue_audio():
 ## Get image of bird species from Flickr
 def queue_photo():
     
-    global local_photo_file
+    global queued_photo_file
     flickr = FlickrQuery(species, FLICKR_API_KEY)
-    local_photo_file = flickr.get_photo()
+    queued_photo_file = flickr.get_photo()
     
     return
 
@@ -160,24 +158,59 @@ def play_audio(repeat: bool):
 
 
 ## Display downloaded photo as fullscreen image
-def display_photo():
+def display_photo(repeat: bool):
 
-    #temp_photo_file = local_photo_file.split(".")[0] + "_temp.jpg"
-    text_to_image(local_photo_file, common_name, species)
+    global local_photo_file
+
+    if not repeat:
+
+        local_photo_file = queued_photo_file
+
+    temp_photo_file = local_photo_file.split(".")[0] + "_temp.jpg"
+    os.system(f"cp {local_photo_file} {temp_photo_file}")
+    text_to_image(temp_photo_file, common_name, species)
     # Close previous image, if displayed
     os.system("pkill feh")
     # Use 'feh' to diplay queued photo file
-    os.system(f"(feh -F -x -Z -Y -G {local_photo_file} &)")
+    os.system(f"feh -F -x -Z -Y -G {temp_photo_file} &")
+    time.sleep(600)  # Show for 10 minutes
+    os.system(f"rm {temp_photo_file}")
+    blank_screen()
 
     return
 
 
-# Schedule tasks to run on time
+## Playback most recent audio and photo file
+def playback():
+
+    play_audio(True)
+    display_photo(True)
+
+
+## Display default photo file
+def blank_screen():
+
+    os.system(f"feh -F -x -Z -Y -G config/default_photo.jpg &")
+
+
+## Set initial globals
+default_vars()  
+
+
+## Start push button listener
+event_listener()
+
+
+## Start program with blank screen - will begin in the next hour
+blank_screen() 
+
+
+## Schedule tasks to run on time
 schedule.every().hour.at(":50").do(get_bird_observations)
 schedule.every().hour.at(":50").do(queue_audio)
 schedule.every().hour.at(":50").do(queue_photo)
 schedule.every().hour.at(":00").do(play_audio, False)
-schedule.every().hour.at(":00").do(display_photo)
+schedule.every().hour.at(":00").do(display_photo, False)
 
 
 # ## Testing - uncomment lines to run functions back-to-back
@@ -185,11 +218,7 @@ schedule.every().hour.at(":00").do(display_photo)
 # schedule.every(1).minutes.do(queue_audio)
 # schedule.every(1).minutes.do(queue_photo)
 # schedule.every(1).minutes.do(play_audio, False)
-# schedule.every(1).minutes.do(display_photo)
-
-
-## Initialize push button listener
-event_listener()
+# schedule.every(1).minutes.do(display_photo, False)
 
 
 try:

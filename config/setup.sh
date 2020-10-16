@@ -95,6 +95,10 @@ sudo apt-get install -y feh
 # Clone project repository to local storage
 git clone https://github.com/ericvc/CuckooPi "${HOMEDIR}/${PROJDIR}/${PROJNAME}"
 
+# Configure startup service
+sudo cp "${HOMEDIR}/${PROJDIR}/${PROJNAME}/config/cuckoopi.service" /etc/systemd/system/cuckoopi.service
+sudo systemctl enable cuckoopi.service  # Run at startup
+sudo systemctl start cuckoopi.service  # Enable now
 
 #################################################################################
 # End of script.
