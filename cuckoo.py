@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from cuckoopi_py.eBirdQuery import eBirdQuery
 from cuckoopi_py.XenoCantoQuery import XenoCantoQuery
 from cuckoopi_py.FlickrQuery import FlickrQuery
@@ -7,6 +9,7 @@ import schedule
 import time
 import os
 import RPi.GPIO as GPIO
+from multiprocessing import Process
 
 
 ## Create media file directory, if it doesn't exist
@@ -43,14 +46,11 @@ GPIO.setup(PUSH_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Push-button input 
 ## Detect when tactile button is pressed, play current audio file when it is
 def event_listener():
 
-    if os.path.isfile(local_audio_file):
-
-        GPIO.add_event_detect(PUSH_BUTTON, GPIO.FALLING, callback=lambda x: playback(True), bouncetime=500)  
-
-    else:
-
-        print("No file is queued.")
-
+    GPIO.add_event_detect(PUSH_BUTTON,
+                          GPIO.FALLING,
+                          callback=lambda x: playback(True),
+                          bouncetime=500)
+                          
 
 ## Get a bird species in the local area
 def get_bird_observations():
@@ -105,7 +105,7 @@ def queue_audio():
             return
         
         counter += 1
-    
+
     # When found, download the file, normalize the levels, and add fade effects
     xc.get_audio()
     queued_audio_file = xc.local_audio_file
@@ -151,7 +151,7 @@ def play_audio(repeat: bool):
         global local_audio_file
         local_audio_file = queued_audio_file
 
-    cmd = f"ffplay {local_audio_file} -nodisp -autoexit -volume {volume} &"
+    cmd = f"(sudo amixer cset numid=1 {volume}% && play -q {local_audio_file}) &"
     os.system(cmd)
     
     return
@@ -161,45 +161,56 @@ def play_audio(repeat: bool):
 def display_photo(repeat: bool):
 
     global local_photo_file
-
-    if not repeat:
-
-        local_photo_file = queued_photo_file
-
     temp_photo_file = local_photo_file.split(".")[0] + "_temp.jpg"
-    os.system(f"cp {local_photo_file} {temp_photo_file}")
-    text_to_image(temp_photo_file, common_name, species)
-    # Close previous image, if displayed
-    os.system("pkill feh")
+    
+    if repeat:
+        
+        sleep = 45
+
+    else:
+    
+        if os.path.isfile(f"{temp_photo_file}"):
+            os.system(f"rm {temp_photo_file}")
+        local_photo_file = queued_photo_file
+        temp_photo_file = local_photo_file.split(".")[0] + "_temp.jpg"
+        os.system(f"cp {local_photo_file} {temp_photo_file}")
+        text_to_image(temp_photo_file, common_name, species)
+        sleep = 120
+    
+        
     # Use 'feh' to diplay queued photo file
     os.system(f"feh -F -x -Z -Y -G {temp_photo_file} &")
-    time.sleep(600)  # Show for 10 minutes
-    os.system(f"rm {temp_photo_file}")
-    blank_screen()
-
+    os.system("sleep 0.1 && xscreensaver-command -deactivate")    
+    os.system(f"sleep {sleep}")  # How long to display before reverting to blank
+    os.system("xscreensaver-command -activate")
+    os.system("pkill feh")
+    
     return
 
 
-## Playback most recent audio and photo file
+## Run parallel processes during playback events
 def playback(repeat: bool):
 
     if repeat:
-        
+         
         GPIO.remove_event_detect(PUSH_BUTTON)
 
-    play_audio(repeat)
-    display_photo(repeat)
+    functions = [play_audio(repeat), display_photo(repeat)]
+    proc = []
+
+    for fxn in functions:
+
+        p = Process(target=fxn)
+        p.start()
+        proc.append(p)
+
+    for p in proc:
+
+        p.join()
 
     if repeat:
 
         event_listener()
-    
-
-
-## Display default photo file
-def blank_screen():
-
-    os.system(f"feh -F -x -Z -Y -G config/default_photo.jpg &")
 
 
 ## Set initial globals
@@ -228,11 +239,8 @@ schedule.every().hour.at(":00").do(playback, False)
 
 
 # ## Testing - uncomment lines to run functions back-to-back
-# schedule.every(1).minutes.do(get_bird_observations)
-# schedule.every(1).minutes.do(queue_audio)
-# schedule.every(1).minutes.do(queue_photo)
-# schedule.every(1).minutes.do(play_audio, False)
-# schedule.every(1).minutes.do(display_photo, False)
+# schedule.every(1).minutes.do(queue_files)
+# schedule.every(1).minutes.do(playback, False)
 
 
 try:

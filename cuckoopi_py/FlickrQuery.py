@@ -20,7 +20,7 @@ class FlickrQuery:
     # Function needed to format the returned JSON object
     def format_json(self, x: str):
         
-        x = re.compile("jsonFlickrApi\\(").sub("", x)
+        x = re.compile("^[a-zA-Z]+\\(").sub("", x)
         x = re.compile("\\)$").sub("", x)
         return json.loads(x)
 
@@ -53,11 +53,21 @@ class FlickrQuery:
     def get_photo(self):
         
         photos = self.response["photos"]["photo"]
-        index = random.randint(0, len(photos)-1)
-        photo_info = photos[index]
-        self.remote_photo_file = f"https://live.staticflickr.com/{photo_info['server']}/{photo_info['id']}_{photo_info['secret']}_b.jpg"
-        work_dir = f"{os.getcwd()}/cache/{self.genus.capitalize()}_{self.species}"
-        check_directory(work_dir)
-        self.local_photo_file = f"{work_dir}/photo/{photo_info['id']}.jpg"
-        os.system(f"wget -O {self.local_photo_file} {self.remote_photo_file}")
+        
+        if len(photos) == 0:
+            
+            self.local_photo_file = f"config/default_photo.jpg"
+            print("No photos returned for this search. Using default image")
+            
+        else:
+            
+            index = random.randint(0, len(photos))
+            photo_info = photos[index]
+            self.remote_photo_file = f"https://live.staticflickr.com/{photo_info['server']}/{photo_info['id']}_{photo_info['secret']}_b.jpg"
+            work_dir = f"{os.getcwd()}/cache/{self.genus.capitalize()}_{self.species}"
+            check_directory(work_dir)
+            self.local_photo_file = f"{work_dir}/photo/{photo_info['id']}.jpg"
+            os.system(f"wget -q -O {self.local_photo_file} {self.remote_photo_file}")
+            print("Photo file download complete.\n")
+        
         return self.local_photo_file

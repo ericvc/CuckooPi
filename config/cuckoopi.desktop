@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Name=CuckooPi
+Icon=emblem-debian
+Type=Application
+Path=/home/pi/Projects/CuckooPi
+Exec=nohup python3 cuckoo.py & 
+Terminal=true
