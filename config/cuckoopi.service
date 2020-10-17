@@ -1,9 +1,9 @@
 [Unit]
-Description=CuckooPi
+Description=CuckooPi Clock
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 -u cuckoo.py
+ExecStart=/usr/bin/python3 -u cuckoo.py > /var/log/script.log 2>&1
 WorkingDirectory=/home/pi/Projects/CuckooPi
 StandardOutput=inherit
 StandardError=inherit

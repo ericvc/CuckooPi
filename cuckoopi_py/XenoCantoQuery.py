@@ -24,7 +24,7 @@ class XenoCantoQuery:
         # Define headers
         USER_AGENT_HEADERS = {
             "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0"
-	    }
+        }
 
         # GET HTTP response
         response = requests.get(self.url, headers=USER_AGENT_HEADERS)
@@ -43,6 +43,7 @@ class XenoCantoQuery:
     def get_audio(self):
 
         if self.num_records > 0:
+            
             row = pd.DataFrame(self.response_json["recordings"]).sample()
             file_path = row["file"].values[0]
             file_id = row["id"].values[0]
@@ -50,8 +51,8 @@ class XenoCantoQuery:
             work_dir = f"{os.getcwd()}/cache/{self.genus.capitalize()}_{self.species}"
             check_directory(work_dir)
             self.local_audio_file = f"{work_dir}/audio/{file_id}.mp3"
-            os.system(f"wget -O {self.local_audio_file} {self.remote_audio_file}")
-            print("File download complete.\n")
+            os.system(f"wget -q -O {self.local_audio_file} {self.remote_audio_file}")
+            print("Audio file download complete.\n")
 
         else:
 

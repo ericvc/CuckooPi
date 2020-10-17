@@ -53,11 +53,22 @@ def text_to_image(input_path: str, common_name: str, binomial: str, font_size_ma
     w, h = image.size
     left = 0
     top = 0
-    right = w * 0.25
+    right = w * 0.33
     bottom = h * 0.25
   
     # Cropped image of above dimension 
-    im_crop = image.crop((left, top, right, bottom))
+
+    try:
+
+        im_crop = image.crop((left, top, right, bottom))
+    
+    except OSError:
+
+        print("Image truncated during cropping.")
+
+    except:
+
+        print("Error cropping image.")
 
     # Determine best text color from cropped region (white is default)
     num_pixels = im_crop.size[0] * im_crop.size[1]
@@ -75,7 +86,7 @@ def text_to_image(input_path: str, common_name: str, binomial: str, font_size_ma
     # Draw text on image
     draw = ImageDraw.Draw(image)
     draw.text((x, y), common_name, fill=text_color, font=font_main)
-    draw.text((x, y+48), f"{binomial}", fill=text_color, font=font_sub)
+    draw.text((x, y+54), f"{binomial}", fill=text_color, font=font_sub)
 
     # # Draw current time
     # hour, minute = map(int, time.strftime("%H %M").split())

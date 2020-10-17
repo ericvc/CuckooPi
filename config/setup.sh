@@ -70,6 +70,13 @@ pip3 install -r "${HOMEDIR}/${PROJDIR}/${PROJNAME}/requirements.txt"
 
 
 #################################################################################
+# Install xcreensaver for screen management
+#################################################################################
+
+sudo apt install -y xscreensaver
+
+
+#################################################################################
 # Install libraries for media file encoding and editing
 #################################################################################
 
@@ -95,10 +102,9 @@ sudo apt-get install -y feh
 # Clone project repository to local storage
 git clone https://github.com/ericvc/CuckooPi "${HOMEDIR}/${PROJDIR}/${PROJNAME}"
 
-# Configure startup service
-sudo cp "${HOMEDIR}/${PROJDIR}/${PROJNAME}/config/cuckoopi.service" /etc/systemd/system/cuckoopi.service
-sudo systemctl enable cuckoopi.service  # Run at startup
-sudo systemctl start cuckoopi.service  # Enable now
+# Add shortcut to desktop
+sudo cp "${HOMEDIR}/${PROJDIR}/${PROJNAME}/config/cuckoopi.desktop" "${HOMEDIR}/Desktop/cuckoopi.desktop"
+
 
 #################################################################################
 # End of script.
