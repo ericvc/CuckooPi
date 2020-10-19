@@ -8,10 +8,11 @@ from pvlib.solarposition import get_solarposition
 
 class eBirdQuery:
 
-    def __init__(self, api_key, latitude: float=-999., longitude: float=-999., search_radius: int=20):
+    def __init__(self, api_key, latitude: float=-999., longitude: float=-999., search_radius: int=20, back: int=14):
 
         self.lat = latitude
         self.lon = longitude
+        self.back = back  # How many days back to search for records
         self.api_key = api_key
         self.location_lookup()
         self.check_time_of_day()
@@ -80,7 +81,7 @@ class eBirdQuery:
     ## Get recent nearby observations of birds
     def get_recent_nearby_observations(self):
         
-        url = "https://api.ebird.org/v2/data/obs/geo/recent?lat=%.2f&lng=%.2f&sort=species&dist=%s" % (self.lat, self.lon, self.search_radius)
+        url = "https://api.ebird.org/v2/data/obs/geo/recent?lat=%.2f&lng=%.2f&sort=species&dist=%s&back=%s" % (self.lat, self.lon, self.search_radius, self.back)
         print(url)
         response = requests.request("GET", url, headers={'X-eBirdApiToken': self.api_key}, data={})
         

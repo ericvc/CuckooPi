@@ -1,7 +1,7 @@
 CuckooPi: A Data-Driven Cuckoo Clock for Raspberry Pi
 ================
 
-The CuckooPi project is an effort to create a data-driven digital Cuckoo
+The CuckooPi project is an effort to create a data-driven digital cuckoo
 clock using information obtained through various APIs. It uses reports
 of bird sightings in your local area (data from
 [eBird](https://ebird.org/home)) to determine which bird species to
@@ -22,7 +22,7 @@ and nightjars will only appear after sunset (apologies to the northern
 hawk owl and other exceptional species that defy this scheme).
 
 All photos are captioned with the common name (e.g., song sparrow) and
-scientific name (*Melospiza meloida*)
+scientific name (*Melospiza melodia*).
 
 ## Installation (Raspberry Pi OS)
 
@@ -43,8 +43,8 @@ assuming you have git installed.
 
 In the `config/` subdirectory, there is a bash script `setup.sh` that
 can be run to automate the installation of system and Python
-dependencies that are needed for the program to run. Most of the former
-are for editing and encoding media files.
+dependencies that are needed by the program. Most of the former are for
+editing and encoding media files.
 
 You may wish to edit the installation script to customize directory path
 settings. To do so, simply edit the first few lines of the file to set
@@ -57,7 +57,52 @@ your script variables, which will be used throughout the script.
 To run the installation script, open a terminal window in the project
 directory and run the follwing:
 
-    sudo bash setup.sh
+    sudo bash config/setup.sh
+
+### Installing Depencies
+
+If you choose instead to manually install software dependencies, the
+following code will be
+useful.
+
+``` 
+#################################################################################
+# Install Python Libraries
+#################################################################################
+
+# Install all over libraries with pip
+pip3 install -r home/pi/Projects/CuckooPi/requirements.txt"
+
+
+#################################################################################
+# Install xscreensaver for screen management
+#################################################################################
+
+sudo apt install -y xscreensaver
+
+
+#################################################################################
+# Install libraries for media file encoding and editing
+#################################################################################
+
+# LAME
+sudo apt-get install -y libmp3lame-dev
+sudo apt-get install -y lame
+
+# sox
+sudo apt-get install -y sox
+sudo apt-get install -y libsox-fmt-mp3
+
+# FFmpeg (may take some time to download and compile)
+sudo bash "home/pi/Projects/CuckooPi/config/ffmpeg_install.sh"
+pip install ffmpeg-normalize
+
+# Feh
+sudo apt-get install -y feh
+
+```
+
+### Starting CuckooPi
 
 The installation script will create a program icon on the desktop.
 Clicking this icon will launch the program. No other steps are required.
@@ -81,26 +126,56 @@ the CuckooPi as a service. The file contents are:
     [Install]
     WantedBy=multi-user.target
 
-To configure this service to run at startup, run the
-following:
+To configure this service to run at startup, run the following in a
+terminal
+window:
 
 ``` 
 sudo cp /home/pi/Projects/CuckooPi/config/cuckoopi.service /etc/systemd/system/cuckoopi.service
 sudo systemctl enable cuckoopi.service  # Run at startup 
-sudo systemctl start cuckoopi.service  # Enable now 
+sudo systemctl start cuckoopi.service  # Start service now 
 ```
 
 ### Other Configuation Options
 
+My favorite feature of CuckooPi is the ability to keep tabs on bird
+species that are moving through my area, thanks to eBird’s API and the
+observations reported by local bird watching enthusiasts. When creating
+an eBird query, this program will attempt to determine your approximate
+location from your IP address and use the maximum allowable search
+radius to collect records. However, this feature is not likely to be
+useful if you are using a VPN.
+
+For best performance, I highly recommend setting your latitude/longitude
+coordinate location manually by editing `cuckoo.py` and adjusting the
+following options (line 76):
+
+    # options
+    lat = 38.00 # 2 decimal limit
+    lon = -121.00 # 2 decimal limit
+    search_radius = 20  # kilometers
+    back = 7  # how many days back to search
+    
+    
+    ebird = eBirdQuery(EBIRD_API_KEY, latitude=lat, longitude=lon, back=back, search_radius=search_radius)
+
+I set mine to include only observations from the last 7 days and limit
+the search radius to 20 km (12.4 mi). I have not yet encountered any
+problems locating recent observations with these settings, but your
+experience will differ (and depend) on the efforts of birders in your
+area. If you have trouble finding records, first try expanding the
+search radius and then try moving the location to a nearby area with a
+more active birding scene.
+
 The CuckooPi uses a single tactile push button that allows the user to
-playback the bird photo and audio recording of the hour. On my system, I
+replay the bird photo and audio recording of the hour. On my system, I
 have this button connected to board pin 8 (GPIO 14). These settings can
 be changed or removed by editing the main program script `cuckoo.py`.
 
-CuckooPi’s screen management relies on the Xscreensaver. Once installed,
-I highly recommend configuring your screensaver to display only a blank
-screen when activated. Whichever screensaver you select will be
-displayed the majority of the time.
+CuckooPi’s screen management relies on the `xscreensaver` program. Once
+installed, I highly suggest configuring your screensaver (from the start
+menu) to display only a blank screen when it is activated. The
+screensaver you select will be displayed the majority of the time.
 
 ## Future Directions
 
@@ -111,9 +186,9 @@ to, include:
   - Equip the RasPi with a 3.5" LCD screen for visual displays. Also
     considering 7" touch screen options.
   - Dedicated speakers, currently weighing different options based on
-    the size/quality tradeoff
-  - A 16x2 I2C LCD will be dedicated to displaying the current date and
-    time
+    the size/quality tradeoff and how they will be connected (HDMI,
+    bluetooth, on-board, etc.)
+  - A 16x2 I2C LCD will display the current date and time
   - Housing options: considering either repurposing a birdhouse or
     building something out of Legos. The latter is a good option because
     it would make mounting the electronic components much easier.

@@ -52,6 +52,13 @@ def event_listener():
                           bouncetime=500)
                           
 
+## Clear cache directory periodically
+def clear_cache():
+
+    os.system("sudo rm -r cache/")
+    os.system("mkdir cache")
+
+
 ## Get a bird species in the local area
 def get_bird_observations():
 
@@ -61,7 +68,12 @@ def get_bird_observations():
 
     # eBird REST client
     global ebird
-    ebird = eBirdQuery(EBIRD_API_KEY, latitude=38.54, longitude=-121.74)
+    lat = 38.54  # 2 decimal limit
+    lon = -121.74  # 2 decimal limit
+    search_radius = 20  # kilometers
+    back = 7  # how many days back to search
+    
+    ebird = eBirdQuery(EBIRD_API_KEY, latitude=lat, longitude=lon, back=back, search_radius=search_radius)
 
     # Search for recent bird observations
     species_found = False
@@ -118,8 +130,7 @@ def queue_audio():
     return
 
 
-## Get image of bird species from Flickr
-def queue_photo():
+## Get image of bird species from Flickrself.back = back # How many days back to search for records
     
     global queued_photo_file
     flickr = FlickrQuery(species, FLICKR_API_KEY)

@@ -51,8 +51,14 @@ class XenoCantoQuery:
             work_dir = f"{os.getcwd()}/cache/{self.genus.capitalize()}_{self.species}"
             check_directory(work_dir)
             self.local_audio_file = f"{work_dir}/audio/{file_id}.mp3"
-            os.system(f"wget -q -O {self.local_audio_file} {self.remote_audio_file}")
-            print("Audio file download complete.\n")
+            if  os.path.isfile(self.local_audio_file):
+
+                print("A copy of this file has already been downloaded.")
+
+            else:
+
+                os.system(f"wget -q -O {self.local_audio_file} {self.remote_audio_file}")
+                print("Audio file download complete.\n")
 
         else:
 

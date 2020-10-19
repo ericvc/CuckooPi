@@ -67,7 +67,13 @@ class FlickrQuery:
             work_dir = f"{os.getcwd()}/cache/{self.genus.capitalize()}_{self.species}"
             check_directory(work_dir)
             self.local_photo_file = f"{work_dir}/photo/{photo_info['id']}.jpg"
-            os.system(f"wget -q -O {self.local_photo_file} {self.remote_photo_file}")
-            print("Photo file download complete.\n")
+            if  os.path.isfile(self.local_photo_file):
+
+                print("A copy of this file has already been downloaded.")
+
+            else:
+                
+                os.system(f"wget -q -O {self.local_photo_file} {self.remote_photo_file}")
+                print("Photo file download complete.\n")
         
         return self.local_photo_file
