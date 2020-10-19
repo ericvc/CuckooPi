@@ -8,7 +8,7 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-The CuckooPi project is an effort to create a data-driven digital cuckoo clock using information obtained through various APIs. It uses reports of bird sightings in your local area (data from [eBird](https://ebird.org/home)) to determine which bird species to display. Once selected, sound recordings of that species' song and calls are collected from the publically accessible [xeno-canto](https://www.xeno-canto.org/) database and photographs obtained from Flickr. These recordings and photographs are played each hour, on the hour, and provide a suprising and educational reminder of what time it is. There is also an option to replay the media files at any time using the RasPi GPIO.
+The CuckooPi project is an effort to create a data-driven digital cuckoo clock using information obtained through various APIs. It uses reports of bird sightings in your local area (data from [eBird](https://ebird.org/home)) to determine which bird species to display. Once selected, sound recordings of that species' song and calls are collected from the publically accessible [xeno-canto](https://www.xeno-canto.org/) database and photographs obtained from Flickr. These recordings and photographs are played each hour, on the hour, and provide a suprising and educational reminder of what time it is. There is also an option to replay the media files at any time using the RasPi GPIO. There is also an option to display a secondary screen, showing a brief description of the bird species obtained from [AllAboutBirds.org](www.allaboutbirds.org)
 
 The CuckooPi clock is a great way to familiarize yourself with the birds in your area. Because the CuckooPi uses recent bird identification records (within the last two weeks by default), the species you will see on the clock are constantly in flux. The clock is also configured to display species at the correct time of the day. Nocturnal taxa like owls and nightjars will only appear after sunset (apologies to the northern hawk owl and other exceptional species that defy this scheme).
 
@@ -21,7 +21,7 @@ All code was written and test for a Raspberry Pi 3B v1.2. More information about
 
 ### Program Dependencies and Files
 
-Before installation, I highly recommend first registering for eBird and Flickr accounts (if necessary) to obtain the API credentials needed to access these databases (xeno-canto is public). Eventually, you will need to edit the file `example_api_keys.json` to include this information.
+Before installation, I highly recommend first registering for eBird and Flickr accounts (if necessary) to obtain the API credentials needed to access these databases (xeno-canto is public). Eventually, you will need to edit the file `example_api_keys.json` to include this information and rename the file `api_keys.json`.
 
 First, copy the code in this GitHub repository to your local machine, assuming you have git installed.
 
@@ -140,7 +140,7 @@ ebird = eBirdQuery(EBIRD_API_KEY, latitude=lat, longitude=lon, back=back, search
 
 I set mine to include only observations from the last 7 days and limit the search radius to 20 km (12.4 mi). I have not yet encountered any problems locating recent observations with these settings, but your experience will differ (and depend) on the efforts of birders in your area. If you have trouble finding records, first try expanding the search radius and then try moving the location to a nearby area with a more active birding scene.
 
-The CuckooPi uses a single tactile push button that allows the user to replay the bird photo and audio recording of the hour. On my system, I have this button connected to board pin 8 (GPIO 14). These settings can be changed or removed by editing the main program script `cuckoo.py`.
+The CuckooPi uses two tactile push buttons that allow the user to replay the bird photo and audio recording of the hour as well as show a brief description of that species. On my system, I have these button connected to board pins 7 and 8 (GPIO 4 and 14). These settings can be changed or removed by editing the main program script `cuckoo.py`.
 
 CuckooPi's screen management relies on the `xscreensaver` program. Once installed, I highly suggest configuring your screensaver (from the start menu) to display only a blank screen when it is activated. The screensaver you select will be displayed the majority of the time.
 

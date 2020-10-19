@@ -11,7 +11,9 @@ are collected from the publically accessible
 obtained from Flickr. These recordings and photographs are played each
 hour, on the hour, and provide a suprising and educational reminder of
 what time it is. There is also an option to replay the media files at
-any time using the RasPi GPIO.
+any time using the RasPi GPIO. There is also an option to display a
+secondary screen, showing a brief description of the bird species
+obtained from [AllAboutBirds.org](www.allaboutbirds.org)
 
 The CuckooPi clock is a great way to familiarize yourself with the birds
 in your area. Because the CuckooPi uses recent bird identification
@@ -34,7 +36,8 @@ information about the system can be found in the file `system.txt`.
 Before installation, I highly recommend first registering for eBird and
 Flickr accounts (if necessary) to obtain the API credentials needed to
 access these databases (xeno-canto is public). Eventually, you will need
-to edit the file `example_api_keys.json` to include this information.
+to edit the file `example_api_keys.json` to include this information and
+rename the file `api_keys.json`.
 
 First, copy the code in this GitHub repository to your local machine,
 assuming you have git installed.
@@ -167,10 +170,11 @@ area. If you have trouble finding records, first try expanding the
 search radius and then try moving the location to a nearby area with a
 more active birding scene.
 
-The CuckooPi uses a single tactile push button that allows the user to
-replay the bird photo and audio recording of the hour. On my system, I
-have this button connected to board pin 8 (GPIO 14). These settings can
-be changed or removed by editing the main program script `cuckoo.py`.
+The CuckooPi uses two tactile push buttons that allow the user to replay
+the bird photo and audio recording of the hour as well as show a brief
+description of that species. On my system, I have these button connected
+to board pins 7 and 8 (GPIO 4 and 14). These settings can be changed or
+removed by editing the main program script `cuckoo.py`.
 
 CuckooPi’s screen management relies on the `xscreensaver` program. Once
 installed, I highly suggest configuring your screensaver (from the start

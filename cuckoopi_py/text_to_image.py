@@ -57,7 +57,6 @@ def text_to_image(input_path: str, common_name: str, binomial: str, font_size_ma
     bottom = h * 0.25
   
     # Cropped image of above dimension 
-
     try:
 
         im_crop = image.crop((left, top, right, bottom))
@@ -88,12 +87,44 @@ def text_to_image(input_path: str, common_name: str, binomial: str, font_size_ma
     draw.text((x, y), common_name, fill=text_color, font=font_main)
     draw.text((x, y+54), f"{binomial}", fill=text_color, font=font_sub)
 
-    # # Draw current time
-    # hour, minute = map(int, time.strftime("%H %M").split())
-    # minute += 1
-    
-    # time_text = f"{hour}:{minute}"
-    # draw.text((0.35*w, 0.4*h), time_text, fill=text_color, font=font_time)
-
     # Save image
     image.save(input_path)
+
+
+# Write text to an image file
+def description_to_image(path: str, text: str, font_size_main: int=50):
+   
+    # Get font from file
+    font_found = False
+    while not font_found:
+
+        try:
+        
+            font_main_file = "config/fonts/LiberationSerif-Regular.ttf"
+            font_main = ImageFont.truetype(font_main_file, size=font_size_main, encoding="unic")
+            font_found = True
+
+        except FileNotFoundError("Missing font file(s)."):
+
+            # Load system default font
+            font_main = ImageFont.load_default()
+            font_found = True
+
+        except:
+            
+            raise EnvironmentError("There was an error loading fonts for caption text.")
+
+    # Load image
+    image = Image.new('RGB', (1920, 1080), color = 'black')
+
+    # Position text (top left corner)
+    w, h = image.size
+    (x, y) = (0.075*w, 0.20*h)  # 7.5% of the width (from left), 20% of the height (from top)
+
+    # Draw text on image
+    text_color = "white"
+    draw = ImageDraw.Draw(image)
+    draw.text((x, y), text, fill=text_color, font=font_main)
+
+    # Save image
+    image.save(path)
