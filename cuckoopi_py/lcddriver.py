@@ -107,6 +107,7 @@ class LCD:
          self.lcd_write(0xD4)
 
       for char in string:
+         
          self.lcd_write(ord(char), register_bit)
 
 

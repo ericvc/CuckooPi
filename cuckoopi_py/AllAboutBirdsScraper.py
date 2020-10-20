@@ -12,10 +12,9 @@ class AllAboutBirdsScraper:
 
         self.genus = Genus_species.split(" ")[0].lower()
         self.species = Genus_species.split(" ")[1]
-        self.common_name = common_name.replace(" ", "_")
-        #self.url = f"https://www.allaboutbirds.org/guide/{self.common_name}/"
-        self.url = f"https://www.allaboutbirds.org/guide/White-throated_swift/"
-
+        self.common_name = common_name.replace(" ", "_").replace("'","")
+        self.url = f"https://www.allaboutbirds.org/guide/{self.common_name}/"
+        
     def request(self):
 
         # Define headers

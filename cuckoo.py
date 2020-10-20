@@ -30,7 +30,7 @@ FLICKR_API_KEY = keys["FLICKR_KEY"]
 ## Global variables (set defaults)
 def default_vars():
 
-    global local_audio_file, local_photo_file, species, common_name
+    global local_audio_file, local_photo_file, local_info_file, species, common_name
     local_audio_file = "config/default_audio.mp3"
     local_photo_file = "config/default_photo.jpg"
     local_info_file = "config/default_info.jpg"
@@ -53,7 +53,7 @@ def playback_event():
     GPIO.add_event_detect(PUSH_BUTTON,
                           GPIO.FALLING,
                           callback=lambda x: playback(True),
-                          bouncetime=500)
+                          bouncetime=5000)
 
 
 ## Detect when info button is pressed, display text
@@ -62,7 +62,7 @@ def information_event():
     GPIO.add_event_detect(INFO_BUTTON,
                           GPIO.FALLING,
                           callback=lambda x: show_info(True),
-                          bouncetime=500)
+                          bouncetime=15000)
                           
 
 ## Clear cache directory periodically
@@ -109,6 +109,7 @@ def get_bird_observations():
     return species, common_name
 
 
+## Get audio recording from xeno-canto
 def queue_audio():
     
     global queued_audio_file
@@ -127,15 +128,16 @@ def queue_audio():
         else:
 
             print("No xeno-canto records found in 10 attempts. Selecting default values.")
-            default_vars()
-            
-            return
+            queued_audio_file = "config/default_audio.mp3"
         
         counter += 1
 
     # When found, download the file, normalize the levels, and add fade effects
-    xc.get_audio()
-    queued_audio_file = xc.local_audio_file
+    if records > 0:
+
+        xc.get_audio()
+        queued_audio_file = xc.local_audio_file
+    
     path = queued_audio_file.split(".")[0] + "_temp.mp3"
     cmd = f"ffmpeg-normalize {queued_audio_file} -c:a libmp3lame -b:a 192k -f -o {path}" \
           f"&& sox {path} {queued_audio_file} fade h 0:1 0 0:3" \
@@ -155,12 +157,15 @@ def queue_photo():
     return
 
 
+## Scrape description of species from AllAboutBirds
 def queue_info():
 
     global queued_info_file
-    aab = AllAboutBirdsScraper(common_name, species)
-    aab.request()
-    queued_info_file = aab.format_description()
+    if not os.path.isfile(queue_info_file):
+
+        aab = AllAboutBirdsScraper(common_name, species)
+        aab.request()
+        queued_info_file = aab.format_description()
 
     return
 
@@ -214,7 +219,6 @@ def display_photo(repeat: bool):
         text_to_image(temp_photo_file, common_name, species)
         sleep = 120
     
-        
     # Use 'feh' to diplay queued photo file
     os.system(f"feh -F -x -Z -Y -G {temp_photo_file} &")
     os.system("sleep 0.1 && xscreensaver-command -deactivate")    
@@ -228,8 +232,6 @@ def display_photo(repeat: bool):
 ## Show a description of the bird species for 15 seconds
 def show_info(repeat: bool):
     
-    GPIO.remove_event_detect(INFO_BUTTON)
-
     global local_info_file
     
     if not repeat:
@@ -241,8 +243,6 @@ def show_info(repeat: bool):
     os.system(f"sleep 15")  # How long to display before reverting to blank
     os.system("xscreensaver-command -activate")
     os.system("pkill feh")
-
-    information_event()
 
 
 ## Run parallel processes during playback events
@@ -281,6 +281,7 @@ information_event()
 
 ## Queue file function
 def queue_files():
+    
     get_bird_observations()
     queue_audio()
     queue_photo()
