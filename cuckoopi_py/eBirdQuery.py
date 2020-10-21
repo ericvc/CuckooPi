@@ -17,6 +17,7 @@ class eBirdQuery:
         self.location_lookup()
         self.check_time_of_day()
         self.search_radius = search_radius
+        self.base_url = "https://api.ebird.org/v2/data/obs/geo/recent?"
 
     ## Check whether it is day or night
     def check_time_of_day(self):
@@ -81,7 +82,7 @@ class eBirdQuery:
     ## Get recent nearby observations of birds
     def get_recent_nearby_observations(self):
         
-        url = "https://api.ebird.org/v2/data/obs/geo/recent?lat=%.2f&lng=%.2f&sort=species&dist=%s&back=%s" % (self.lat, self.lon, self.search_radius, self.back)
+        url = self.base_url + ("lat=%.2f&lng=%.2f&sort=species&dist=%s&back=%s&cat=species" % (self.lat, self.lon, self.search_radius, self.back))
         print(url)
         response = requests.request("GET", url, headers={'X-eBirdApiToken': self.api_key}, data={})
         

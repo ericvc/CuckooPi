@@ -119,7 +119,7 @@ def description_to_image(path: str, text: str, font_size_main: int=50):
 
     # Position text (top left corner)
     w, h = image.size
-    (x, y) = (0.075*w, 0.20*h)  # 7.5% of the width (from left), 20% of the height (from top)
+    (x, y) = (0.075*w, 0.3*h)  # 7.5% of the width (from left), 30% of the height (from top)
 
     # Draw text on image
     text_color = "white"

@@ -5,12 +5,15 @@ from cuckoopi_py.XenoCantoQuery import XenoCantoQuery
 from cuckoopi_py.FlickrQuery import FlickrQuery
 from cuckoopi_py.AllAboutBirdsScraper import AllAboutBirdsScraper
 from cuckoopi_py.text_to_image import text_to_image
+from cuckoopi_py.lcddriver import LCD
 import json
 import schedule
 import time
 import os
 import RPi.GPIO as GPIO
 from multiprocessing import Process
+from time import sleep, strftime
+from subprocess import *
 
 
 ## Create media file directory, if it doesn't exist
@@ -19,12 +22,21 @@ if not os.path.isdir("cache"):
     os.system("mkdir cache")
 
 
-## API Authentication Settings
+## API Authentication
 with open("api_keys.json") as f:
     keys = json.load(f)
 
 EBIRD_API_KEY = keys["EBIRD"]
 FLICKR_API_KEY = keys["FLICKR_KEY"]
+lcd = LCD()
+
+## GPIO pin settings and options
+PUSH_BUTTON = 8
+INFO_BUTTON = 7
+GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering scheme
+GPIO.setwarnings(False)  # Disable warnings
+GPIO.setup(PUSH_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Push button input (initial value is up)
+GPIO.setup(INFO_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Info button input (initial value is up)
 
 
 ## Global variables (set defaults)
@@ -36,15 +48,6 @@ def default_vars():
     local_info_file = "config/default_info.jpg"
     species = "Strix varia"
     common_name = "Barred Owl"
-
-
-## GPIO pin settings and options
-PUSH_BUTTON = 8
-INFO_BUTTON = 7
-GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering scheme
-GPIO.setwarnings(False)  # Disable warnings
-GPIO.setup(PUSH_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Push button input (initial value is up)
-GPIO.setup(INFO_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Info button input (initial value is up)
 
 
 ## Detect when tactile button is pressed, play current audio file when it is
@@ -61,7 +64,7 @@ def information_event():
 
     GPIO.add_event_detect(INFO_BUTTON,
                           GPIO.FALLING,
-                          callback=lambda x: show_info(True),
+                          callback=lambda x: show_info(),
                           bouncetime=15000)
                           
 
@@ -129,6 +132,7 @@ def queue_audio():
 
             print("No xeno-canto records found in 10 attempts. Selecting default values.")
             queued_audio_file = "config/default_audio.mp3"
+            break
         
         counter += 1
 
@@ -154,19 +158,6 @@ def queue_photo():
     flickr = FlickrQuery(species, FLICKR_API_KEY)
     queued_photo_file = flickr.get_photo()
     
-    return
-
-
-## Scrape description of species from AllAboutBirds
-def queue_info():
-
-    global queued_info_file
-    if not os.path.isfile(queue_info_file):
-
-        aab = AllAboutBirdsScraper(common_name, species)
-        aab.request()
-        queued_info_file = aab.format_description()
-
     return
 
 
@@ -230,14 +221,24 @@ def display_photo(repeat: bool):
 
 
 ## Show a description of the bird species for 15 seconds
-def show_info(repeat: bool):
+def show_info():
     
+    # Get information
     global local_info_file
+    gen, spec = species.split(" ")
+    file_path = f"{os.getcwd()}/cache/{gen.capitalize()}_{spec}/photo/info.jpg"
     
-    if not repeat:
-        
-        local_info_file = queued_info_file
+    if not os.path.isfile(file_path):
 
+        aab = AllAboutBirdsScraper(common_name, species)
+        aab.request()
+        local_info_file = aab.format_description()
+
+    else:
+
+        local_info_file = file_path
+
+    # Screen management
     os.system(f"feh -F -x -Z -Y -G {local_info_file} &")
     os.system("sleep 0.1 && xscreensaver-command -deactivate")    
     os.system(f"sleep 15")  # How long to display before reverting to blank
@@ -270,22 +271,26 @@ def playback(repeat: bool):
         playback_event()
 
 
-## Set initial globals
-default_vars()  
-
-
-## Start push button listener
-playback_event()
-information_event()
-
-
 ## Queue file function
 def queue_files():
     
     get_bird_observations()
     queue_audio()
     queue_photo()
-    queue_info()
+
+
+## Set initial globals
+default_vars()  
+
+
+## Start GPIO event listeners
+playback_event()
+information_event()
+
+
+## Initialize LCD display driver
+lcd = LCD()
+os.system("python3 display_time.py &")  # start LCD clock
 
 
 ## Start up
@@ -310,7 +315,7 @@ try:
     while True:
 
         schedule.run_pending()
-        time.sleep(0.5)
+        time.sleep(1)
 
 except KeyboardInterrupt:
 
@@ -325,3 +330,4 @@ finally:
     # Clean program exit
     GPIO.cleanup()  
     schedule.clear()
+    lcd.lcd_clear()

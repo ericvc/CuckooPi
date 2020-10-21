@@ -3,3 +3,4 @@ schedule
 pvlib==0.8.0
 datetime
 pillow
+smbus

@@ -16,3 +16,5 @@ config/default_photo.jpg
 wget-log
 
 feh_021709_000001_default_photo.jpg
+
+*.out

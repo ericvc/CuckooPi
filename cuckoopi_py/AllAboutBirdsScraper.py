@@ -14,6 +14,7 @@ class AllAboutBirdsScraper:
         self.species = Genus_species.split(" ")[1]
         self.common_name = common_name.replace(" ", "_").replace("'","")
         self.url = f"https://www.allaboutbirds.org/guide/{self.common_name}/"
+        self.work_dir = f"{os.getcwd()}/cache/{self.genus.capitalize()}_{self.species}"
         
     def request(self):
 
@@ -35,13 +36,13 @@ class AllAboutBirdsScraper:
                 #Locate description text in HTML response
                 div = soup.find('div', {"class": "speciesInfoCard float clearfix"})
                 desc = str(div.find("p"))  # Find paragraph tag within div class
-                desc = re.compile("</?p>").sub("", desc) # Removes paragraph tags
-                desc = re.compile("^\[").sub("", desc) # Removes paragraph tags
-                self.description = re.compile("\]$").sub("", desc) # Removes paragraph tags
+                desc = re.compile("</?[a-zA-Z]+>").sub("", desc) # Removes HTML tags
+                desc = re.compile("^\\[").sub("", desc) # Removes paragraph tags
+                self.description = re.compile("\\]$").sub("", desc) # Removes paragraph tags
             
             except:
 
-                self.description = "(No description could be found. Sorry!)"  # Blank if error
+                self.description = "(No description could be found. Sorry!)"  # if error
                 print("While trying to get a bird description, an error occurred.")
 
         else:
@@ -67,10 +68,11 @@ class AllAboutBirdsScraper:
         self.frmt_desc = "\n".join(lines)
 
         # Save output
-        work_dir = f"{os.getcwd()}/cache/{self.genus.capitalize()}_{self.species}"
-        check_directory(work_dir)
-        self.local_info_file = f"{work_dir}/photo/info.jpg"
-        description_to_image(self.local_info_file, self.frmt_desc)
+        check_directory(self.work_dir)
+        self.local_info_file = f"{self.work_dir}/photo/info.jpg"
+        if not os.path.isfile(self.local_info_file):
+            
+            description_to_image(self.local_info_file, self.frmt_desc)
 
         return self.local_info_file
 

@@ -181,6 +181,15 @@ installed, I highly suggest configuring your screensaver (from the start
 menu) to display only a blank screen when it is activated. The
 screensaver you select will be displayed the majority of the time.
 
+My configuration also uses a 16x2 LCD to display the current date and
+time. Code for running the LCD display is included in this repo, but
+first, you must enable I2C on your RasPi. From the terminal run as root:
+
+    sudo raspi-config
+
+and navigate the menu to the interface options and enable I2C
+connections.
+
 ## Future Directions
 
 I am excited to build upon this software and create a housing to
@@ -192,7 +201,6 @@ to, include:
   - Dedicated speakers, currently weighing different options based on
     the size/quality tradeoff and how they will be connected (HDMI,
     bluetooth, on-board, etc.)
-  - A 16x2 I2C LCD will display the current date and time
   - Housing options: considering either repurposing a birdhouse or
     building something out of Legos. The latter is a good option because
     it would make mounting the electronic components much easier.
