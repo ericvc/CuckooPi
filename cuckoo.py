@@ -13,30 +13,6 @@ import os
 import RPi.GPIO as GPIO
 from multiprocessing import Process
 from time import sleep, strftime
-from subprocess import *
-
-
-## Create media file directory, if it doesn't exist
-if not os.path.isdir("cache"):
-    
-    os.system("mkdir cache")
-
-
-## API Authentication
-with open("api_keys.json") as f:
-    keys = json.load(f)
-
-EBIRD_API_KEY = keys["EBIRD"]
-FLICKR_API_KEY = keys["FLICKR_KEY"]
-lcd = LCD()
-
-## GPIO pin settings and options
-PUSH_BUTTON = 8
-INFO_BUTTON = 7
-GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering scheme
-GPIO.setwarnings(False)  # Disable warnings
-GPIO.setup(PUSH_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Push button input (initial value is up)
-GPIO.setup(INFO_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Info button input (initial value is up)
 
 
 ## Global variables (set defaults)
@@ -279,37 +255,45 @@ def queue_files():
     queue_photo()
 
 
-## Set initial globals
-default_vars()  
-
-
-## Start GPIO event listeners
-playback_event()
-information_event()
-
-
-## Initialize LCD display driver
-lcd = LCD()
-os.system("python3 display_time.py &")  # start LCD clock
-
-
-## Start up
-queue_files()
-playback(False)
-
-
-## Schedule tasks to run on time
-schedule.every().hour.at(":50").do(queue_files)
-schedule.every().hour.at(":00").do(playback, False)
-schedule.every().sunday.at("00:30").do(clear_cache)
-
-
-# ## Testing - uncomment lines to run functions back-to-back
-# schedule.every(1).minutes.do(queue_files)
-# schedule.every(1).minutes.do(playback, False)
-
-
 try:
+
+    ## Create media file directory, if it doesn't exist
+    if not os.path.isdir("cache"):
+        
+        os.system("mkdir cache")
+
+    ## API authentication keys
+    with open("api_keys.json") as f:
+        keys = json.load(f)
+
+    EBIRD_API_KEY = keys["EBIRD"]
+    FLICKR_API_KEY = keys["FLICKR_KEY"]
+    lcd = LCD()
+
+    ## GPIO pin settings and options
+    PUSH_BUTTON = 8
+    INFO_BUTTON = 7
+    GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering scheme
+    GPIO.setwarnings(False)  # Disable warnings
+    GPIO.setup(PUSH_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Push button input (initial value is up)
+    GPIO.setup(INFO_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Info button input (initial value is up)
+
+    ## Start up
+    os.system("xscreensaver-command -activate")  # Blank screen
+    default_vars()  # Set initial globals
+    playback_event()  # Start GPIO event listeners
+    information_event()  # ""
+    lcd = LCD()  #  Initialize LCD display driver
+    os.system("python3 display_time.py &")  # start LCD clock
+
+    ## Schedule tasks to run on time
+    schedule.every().hour.at(":50").do(queue_files)
+    schedule.every().hour.at(":00").do(playback, False)
+    schedule.every().sunday.at("00:30").do(clear_cache)
+
+    ## Initialize
+    queue_files()
+    playback(False)
 
     ## Main program loop
     while True:

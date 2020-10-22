@@ -51,12 +51,12 @@ class AllAboutBirdsScraper:
 
     def format_description(self):
 
-        line_width = 80
+        line_width = 80  # number characters per line
         words = self.description.split(" ")
         # Containers
         lines = []
         text = ""
-        # Sequentially adds words to a string until they exceed word limit
+        # Sequentially adds words to a string until they would exceed character limit
         while words:
             if (len(text) + len(words[0]) + 1) <  line_width:
                 text = text + " " + words[0]
@@ -65,7 +65,7 @@ class AllAboutBirdsScraper:
                 lines.append(text)
                 text = ""
         lines.append(text)
-        self.frmt_desc = "\n".join(lines)
+        self.frmt_desc = "\n".join(lines)  # Add 'new line' character to the end of each line
 
         # Save output
         check_directory(self.work_dir)
