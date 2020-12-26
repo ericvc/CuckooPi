@@ -1,11 +1,8 @@
-# REQUIRES FFMPEG TO BE INSTALLED ON LOCAL SYSTEM
-
-
 import os
 import pandas as pd
 import requests
 import schedule
-from cuckoopi_py.check_directory import check_directory
+from cuckoopi.check_directory import check_directory
 
 
 class XenoCantoQuery:
@@ -57,8 +54,8 @@ class XenoCantoQuery:
 
             else:
 
-                os.system(f"wget -q -O {self.local_audio_file} {self.remote_audio_file}")
-                print("Audio file download complete.\n")
+                os.system(f"wget -O {self.local_audio_file} {self.remote_audio_file}")
+                print(f"Audio file download complete: {self.local_audio_file}.\n")
 
         else:
 

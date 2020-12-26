@@ -91,6 +91,7 @@ LCD_NOBACKLIGHT = 0x00
 enable_bit = 0b00000100
 register_bit = 0b00000001
 
+
 class LCD:
 
 
@@ -106,6 +107,16 @@ class LCD:
       self.lcd_write(LCD_CLEARDISPLAY)
       self.lcd_write(LCD_ENTRYMODESET | LCD_ENTRYLEFT)
       sleep(0.2)
+
+
+   # LCD backlight control
+   def backlight(self, mode):
+
+      if mode == 0:
+         self.lcd_device.write_cmd(LCD_NOBACKLIGHT)
+
+      elif mode == 1:
+         self.lcd_device.write_cmd(LCD_BACKLIGHT)
 
 
    def lcd_strobe(self, data):

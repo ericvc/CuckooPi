@@ -6,7 +6,7 @@ import time
 # Calculate the luminance of a color
 def __luminance(color):
 
-    red, green, blue = ImageColor.getrgb(color)  # Convert Hex to RGB tuple
+    red, green, blue = ImageColor.getrgb(color)  # Convert hex to RGB tuple
     return (.299 * red) + (.587 * green) + (.114 * blue)
 
 
@@ -16,8 +16,8 @@ def __are_compatible(color_1, color_2):
     return abs(__luminance(color_1) - __luminance(color_2)) >= 128.0
 
 
-# Write text to an image file
 def text_to_image(input_path: str, common_name: str, binomial: str, font_size_main: int=50, font_size_sub: int=35):
+    """Writes species name to downloaded image"""
 
     if not os.path.isfile(input_path):
 
@@ -93,7 +93,8 @@ def text_to_image(input_path: str, common_name: str, binomial: str, font_size_ma
 
 # Write text to an image file
 def description_to_image(path: str, text: str, font_size_main: int=50):
-   
+    """Writes description of bird species (scraped from website) to blank image file"""
+
     # Get font from file
     font_found = False
     while not font_found:
@@ -119,7 +120,7 @@ def description_to_image(path: str, text: str, font_size_main: int=50):
 
     # Position text
     w, h = image.size
-    (x, y) = (0.075*w, 0.3*h)  # 7.5% of the width (from left), 30% of the height (from top)
+    (x, y) = (0.08*w, 0.3*h)  # 8% of the width (from left), 30% of the height (from top)
 
     # Draw text on image
     text_color = "white"

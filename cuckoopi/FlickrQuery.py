@@ -3,7 +3,7 @@ import requests
 import json
 import re
 import random
-from cuckoopi_py.check_directory import check_directory
+from cuckoopi.check_directory import check_directory
 
 
 class FlickrQuery:
@@ -52,6 +52,7 @@ class FlickrQuery:
 
     def get_photo(self):
         
+        self.request()
         photos = self.response["photos"]["photo"]
         
         if len(photos) == 0:
@@ -62,18 +63,18 @@ class FlickrQuery:
         else:
             
             index = random.randint(0, len(photos))
-            photo_info = photos[index]
-            self.remote_photo_file = f"https://live.staticflickr.com/{photo_info['server']}/{photo_info['id']}_{photo_info['secret']}_b.jpg"
+            self.photo_info = photos[index]
+            self.remote_photo_file = f"https://live.staticflickr.com/{self.photo_info['server']}/{self.photo_info['id']}_{self.photo_info['secret']}_b.jpg"
             work_dir = f"{os.getcwd()}/cache/{self.genus.capitalize()}_{self.species}"
             check_directory(work_dir)
-            self.local_photo_file = f"{work_dir}/photo/{photo_info['id']}.jpg"
+            self.local_photo_file = f"{work_dir}/photo/{self.photo_info['id']}.jpg"
             if  os.path.isfile(self.local_photo_file):
 
                 print("A copy of this file has already been downloaded.")
 
             else:
                 
-                os.system(f"wget -q -O {self.local_photo_file} {self.remote_photo_file}")
+                os.system(f"wget -O {self.local_photo_file} {self.remote_photo_file}")
                 print("Photo file download complete.\n")
-        
+
         return self.local_photo_file

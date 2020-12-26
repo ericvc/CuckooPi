@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 
-from cuckoopi_py.eBirdQuery import eBirdQuery
-from cuckoopi_py.XenoCantoQuery import XenoCantoQuery
-from cuckoopi_py.FlickrQuery import FlickrQuery
-from cuckoopi_py.AllAboutBirdsScraper import AllAboutBirdsScraper
-from cuckoopi_py.text_to_image import text_to_image
-from cuckoopi_py.lcddriver import LCD
+from cuckoopi.eBirdQuery import eBirdQuery
+from cuckoopi.XenoCantoQuery import XenoCantoQuery
+from cuckoopi.FlickrQuery import FlickrQuery
+from cuckoopi.AllAboutBirdsScraper import AllAboutBirdsScraper
+from cuckoopi.text_to_image import text_to_image
+from cuckoopi.lcddriver import LCD
 import json
 import schedule
 import time
@@ -13,17 +13,19 @@ import os
 import RPi.GPIO as GPIO
 from multiprocessing import Process
 from time import sleep, strftime
+from PIL import Image
+import pygame
 
 
 ## Global variables (set defaults)
 def default_vars():
 
-    global local_audio_file, local_photo_file, local_info_file, species, common_name
+    global local_audio_file, local_photo_file, local_info_file, queued_species, queued_common_name
     local_audio_file = "config/default_audio.mp3"
     local_photo_file = "config/default_photo.jpg"
     local_info_file = "config/default_info.jpg"
-    species = "Strix varia"
-    common_name = "Barred Owl"
+    queued_species = "Strix varia"
+    queued_common_name = "Barred Owl"
 
 
 ## Detect when tactile button is pressed, play current audio file when it is
@@ -59,13 +61,16 @@ def get_bird_observations():
     """
 
     # eBird REST client
-    global ebird, common_name, species
-    lat = 38.54  # 2 decimal limit
-    lon = -121.74  # 2 decimal limit
-    search_radius = 20  # kilometers
-    back = 7  # how many days back to search
-    
-    ebird = eBirdQuery(EBIRD_API_KEY, latitude=lat, longitude=lon, back=back, search_radius=search_radius)
+    global ebird, queued_common_name, queued_species
+    opts = {
+        "api_key":EBIRD_API_KEY, 
+        "latitude":38.54, 
+        "longitude":-121.74,
+        "search_radius":20,  # kilometers
+        "back":7  # days
+        }
+
+    ebird = eBirdQuery(**opts)
 
     # Search for recent bird observations
     species_found = False
@@ -80,12 +85,14 @@ def get_bird_observations():
         else:
 
             # If no records are found, return default values:
-            raise ValueError("eBird records not returned in the maximum number of attempts (20).")
-
+            default_vars()
+            print("eBird records not returned in the maximum number of attempts (20). Using default values")
+            return
+            
         counter += 1
     
-    species, common_name = ebird.choose_a_species()
-    return species, common_name
+    queued_species, queued_common_name = ebird.choose_a_species()
+    return queued_species, queued_common_name
 
 
 ## Get audio recording from xeno-canto
@@ -101,7 +108,7 @@ def queue_audio():
 
         if counter < 10:
 
-            xc = XenoCantoQuery(species)
+            xc = XenoCantoQuery(queued_species)
             records = xc.num_records
 
         else:
@@ -120,9 +127,16 @@ def queue_audio():
     
     path = queued_audio_file.split(".")[0] + "_temp.mp3"
     cmd = f"ffmpeg-normalize {queued_audio_file} -c:a libmp3lame -b:a 192k -f -o {path}" \
-          f"&& sox {path} {queued_audio_file} fade h 0:1 0 0:3" \
           f"&& rm {path}"
-    os.system(cmd)
+
+    try:
+
+    	os.system(cmd)
+
+    except:
+
+        print("There was an error formating the audio file. Reverting to default")
+        queued_audio_file = "config/default_audio.mp3"
     
     return
 
@@ -131,14 +145,18 @@ def queue_audio():
 def queue_photo():
     
     global queued_photo_file
-    flickr = FlickrQuery(species, FLICKR_API_KEY)
+    flickr = FlickrQuery(queued_species, FLICKR_API_KEY)
     queued_photo_file = flickr.get_photo()
-    
-    return
+    #Check aspect ratio of queued file
+    im = Image.open(queued_photo_file)
+    if im.size[0]/im.size[1] > 1:
+        return
+    else:
+        queue_photo()
 
 
 ## Play downloaded audio file
-def play_audio(repeat: bool):
+def play_audio():
 
     if "ebird" in globals():
 
@@ -148,47 +166,38 @@ def play_audio(repeat: bool):
 
         night = 0
 
-    # Adjust volume depending on the time of day
-    volume = 100
+    # Adjust volume depending on the time of day (keep low to prevent clipping)
+    volume = 0.8
 
     if night:
 
-        volume = 65
+        volume = 0.55
     
-    if not repeat:
+    # cmd = f"(sudo amixer cset numid=1 {volume}% && play -q {local_audio_file}) &"
+    # os.system(cmd)
 
-        global local_audio_file
-        local_audio_file = queued_audio_file
-
-    cmd = f"(sudo amixer cset numid=1 {volume}% && play -q {local_audio_file}) &"
-    os.system(cmd)
+    # Now using pygame module for audio playback rather than amixer
+    pygame.mixer.init()
+    pygame.mixer.music.load(local_audio_file)
+    pygame.mixer.music.set_volume(volume)
+    pygame.mixer.music.fadeout(3000)  # 3 seconds fade out
+    pygame.mixer.music.play()
     
     return
 
 
 ## Display downloaded photo as fullscreen image
-def display_photo(repeat: bool):
-
-    global local_photo_file
+def display_photo(sleep: int):
+    
     temp_photo_file = local_photo_file.split(".")[0] + "_temp.jpg"
-    
-    if repeat:
-        
-        sleep = 45
-
-    else:
-    
-        if os.path.isfile(f"{temp_photo_file}"):
-            os.system(f"rm {temp_photo_file}")
-        local_photo_file = queued_photo_file
-        temp_photo_file = local_photo_file.split(".")[0] + "_temp.jpg"
-        os.system(f"cp {local_photo_file} {temp_photo_file}")
-        text_to_image(temp_photo_file, common_name, species)
-        sleep = 120
+    if os.path.isfile(f"{temp_photo_file}"):
+        os.system(f"rm {temp_photo_file}")
+    os.system(f"cp {local_photo_file} {temp_photo_file}")
+    text_to_image(temp_photo_file, common_name, species)
     
     # Use 'feh' to diplay queued photo file
     os.system(f"feh -F -x -Z -Y -G {temp_photo_file} &")
-    os.system("sleep 0.1 && xscreensaver-command -deactivate")    
+    os.system("sleep 0.5 && xscreensaver-command -deactivate")    
     os.system(f"sleep {sleep}")  # How long to display before reverting to blank
     os.system("xscreensaver-command -activate")
     os.system("pkill feh")
@@ -198,6 +207,8 @@ def display_photo(repeat: bool):
 
 ## Show a description of the bird species for 15 seconds
 def show_info():
+
+    GPIO.remove_event_detect(INFO_BUTTON)  # temporarily disable event detection to prevent duplicate inputs
     
     # Get information
     global local_info_file
@@ -216,20 +227,30 @@ def show_info():
 
     # Screen management
     os.system(f"feh -F -x -Z -Y -G {local_info_file} &")
-    os.system("sleep 0.1 && xscreensaver-command -deactivate")    
+    os.system("sleep 0.5 && xscreensaver-command -deactivate")    
     os.system(f"sleep 15")  # How long to display before reverting to blank
     os.system("xscreensaver-command -activate")
     os.system("pkill feh")
+
+    information_event()  # re-enable event detection
 
 
 ## Run parallel processes during playback events
 def playback(repeat: bool):
 
-    if repeat:
-         
-        GPIO.remove_event_detect(PUSH_BUTTON)
+    GPIO.remove_event_detect(PUSH_BUTTON)  # temporarily disable event detection to prevent duplicate inputs
 
-    functions = [play_audio(repeat), display_photo(repeat)]
+    sleep = 45
+    if not repeat:
+
+        global species, common_name, local_audio_file, local_photo_file
+        species = queued_species
+        common_name = queued_common_name
+        local_photo_file = queued_photo_file
+        local_audio_file = queued_audio_file
+        sleep = 120
+
+    functions = [play_audio(), display_photo(sleep)]
     proc = []
 
     for fxn in functions:
@@ -241,16 +262,15 @@ def playback(repeat: bool):
     for p in proc:
 
         p.join()
-
-    if repeat:
-
-        playback_event()
+    
+    playback_event()
 
 
 ## Queue file function
 def queue_files():
     
-    get_bird_observations()
+    global queued_species, queued_common_name
+    queued_species, queued_common_name = get_bird_observations()
     queue_audio()
     queue_photo()
 
@@ -268,7 +288,7 @@ try:
 
     EBIRD_API_KEY = keys["EBIRD"]
     FLICKR_API_KEY = keys["FLICKR_KEY"]
-    lcd = LCD()
+
 
     ## GPIO pin settings and options
     PUSH_BUTTON = 8
@@ -281,9 +301,8 @@ try:
     ## Start up
     os.system("xscreensaver-command -activate")  # Blank screen
     default_vars()  # Set initial globals
-    playback_event()  # Start GPIO event listeners
+    playback_event()  # Start GPIO event listener
     information_event()  # ""
-    lcd = LCD()  #  Initialize LCD display driver
     os.system("python3 display_time.py &")  # start LCD clock
 
     ## Schedule tasks to run on time
@@ -314,4 +333,4 @@ finally:
     # Clean program exit
     GPIO.cleanup()  
     schedule.clear()
-    lcd.lcd_clear()
+    LCD().lcd_clear()

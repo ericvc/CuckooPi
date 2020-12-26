@@ -1,14 +1,11 @@
 # Copied and barely edited from: http://fuzzthepiguy.tech/lcd/
 
 from time import sleep, strftime
-from subprocess import *
-from cuckoopi_py.lcddriver import LCD
+from cuckoopi.lcddriver import LCD
 
 
 lcd = LCD()
-
-
-lcd.lcd_clear()
+lcd.lcd_clear()  # Refresh screen
 
 
 try:
